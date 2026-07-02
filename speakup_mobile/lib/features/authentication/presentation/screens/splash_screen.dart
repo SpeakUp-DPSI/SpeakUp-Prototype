@@ -29,7 +29,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.forum, size: 80, color: Colors.white),
+            const Icon(Icons.shield_outlined, size: 80, color: Colors.white),
             const SizedBox(height: 16),
             const Text(
               'SpeakUp',

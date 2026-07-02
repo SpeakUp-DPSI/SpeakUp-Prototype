@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/authentication/presentation/screens/splash_screen.dart';
 import '../../features/authentication/presentation/screens/onboarding_screen.dart';
 import '../../features/authentication/presentation/screens/login_screen.dart';
+import '../../features/authentication/presentation/screens/register_screen.dart';
 import '../../features/dashboard/presentation/screens/main_wrapper_screen.dart';
 import '../../features/dashboard/presentation/screens/dynamic_dashboard_screen.dart';
 import '../../features/report/presentation/screens/create_report_screen.dart';
@@ -29,7 +30,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isAuth = authState is AuthSuccess;
       
       final path = state.uri.toString();
-      final isGoingToAuth = path == '/' || path == '/onboarding' || path == '/login';
+      final isGoingToAuth = path == '/' || path == '/onboarding' || path == '/login' || path == '/register';
       
       if (!isAuth && !isGoingToAuth) {
         return '/login';
@@ -53,6 +54,10 @@ final routerProvider = Provider<GoRouter>((ref) {
     GoRoute(
       path: '/login',
       builder: (context, state) => const LoginScreen(),
+    ),
+    GoRoute(
+      path: '/register',
+      builder: (context, state) => const RegisterScreen(),
     ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {

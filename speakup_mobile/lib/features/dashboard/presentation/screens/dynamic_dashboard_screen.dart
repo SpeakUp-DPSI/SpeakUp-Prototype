@@ -15,20 +15,18 @@ class DynamicDashboardScreen extends ConsumerWidget {
     final authState = ref.watch(authProvider);
 
     if (authState is AuthSuccess) {
-      final role = authState.user.roles.isNotEmpty ? authState.user.roles.first : 'siswa';
+      final role = authState.user.roles.isNotEmpty ? authState.user.roles.first.toLowerCase() : 'siswa';
       
-      switch (role) {
-        case 'guru_bk':
-          return const TeacherDashboardScreen();
-        case 'kepsek':
-          return const PrincipalDashboardScreen();
-        case 'ortu':
-          return const ParentDashboardScreen();
-        case 'admin':
-          return const AdminDashboardScreen();
-        case 'siswa':
-        default:
-          return const StudentDashboardScreen();
+      if (role.contains('guru')) {
+        return const TeacherDashboardScreen();
+      } else if (role.contains('kepala') || role.contains('kepsek')) {
+        return const PrincipalDashboardScreen();
+      } else if (role.contains('ortu') || role.contains('wali')) {
+        return const ParentDashboardScreen();
+      } else if (role.contains('admin')) {
+        return const AdminDashboardScreen();
+      } else {
+        return const StudentDashboardScreen();
       }
     }
 
