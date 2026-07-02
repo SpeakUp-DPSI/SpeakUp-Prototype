@@ -4,6 +4,41 @@ import '../../data/datasources/auth_remote_data_source.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/models/user_model.dart';
 
+// ─── MOCK AUTH FLAG ──────────────────────────────────────────────────────────
+/// Set ke [true] untuk bypass backend (development / testing tanpa backend).
+/// Set ke [false] ketika backend Laravel sudah berjalan.
+const bool kUseMockAuth = true;
+
+/// Membuat mock [UserModel] berdasarkan keyword dalam email.
+/// Contoh: "gurubk@test.com" → role "Guru BK"
+UserModel _mockUserFromEmail(String email) {
+  final lower = email.toLowerCase();
+  String role = 'Siswa';
+  String name = 'Demo Siswa';
+
+  if (lower.contains('gurubk') || lower.contains('guru')) {
+    role = 'Guru BK';
+    name = 'Demo Guru BK';
+  } else if (lower.contains('kepsek') || lower.contains('kepala')) {
+    role = 'Kepala Sekolah';
+    name = 'Demo Kepsek';
+  } else if (lower.contains('ortu') || lower.contains('wali')) {
+    role = 'Orang Tua/Wali';
+    name = 'Demo Wali Murid';
+  } else if (lower.contains('admin')) {
+    role = 'Admin';
+    name = 'Demo Admin';
+  }
+
+  return UserModel(
+    id: 0,
+    name: name,
+    email: email,
+    roles: [role],
+  );
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 final authRemoteDataSourceProvider = Provider<AuthRemoteDataSource>((ref) {
   final apiClient = ref.read(apiClientProvider);
   return AuthRemoteDataSource(apiClient);
@@ -34,7 +69,10 @@ class AuthNotifier extends Notifier<AuthState> {
   @override
   AuthState build() {
     _repository = ref.read(authRepositoryProvider);
-    _checkAuth();
+    // Jika mock mode, tidak perlu cek token dari server
+    if (!kUseMockAuth) {
+      _checkAuth();
+    }
     return AuthInitial();
   }
 
@@ -54,6 +92,15 @@ class AuthNotifier extends Notifier<AuthState> {
 
   Future<void> login(String email, String password) async {
     state = AuthLoading();
+
+    // ── Mock mode: bypass backend ──────────────────────────────────────────
+    if (kUseMockAuth) {
+      await Future.delayed(const Duration(milliseconds: 600));
+      state = AuthSuccess(_mockUserFromEmail(email));
+      return;
+    }
+    // ──────────────────────────────────────────────────────────────────────
+
     try {
       final user = await _repository.login(email, password);
       state = AuthSuccess(user);
@@ -65,7 +112,7 @@ class AuthNotifier extends Notifier<AuthState> {
   Future<void> logout() async {
     state = AuthLoading();
     try {
-      await _repository.logout();
+      if (!kUseMockAuth) await _repository.logout();
       state = AuthInitial();
     } catch (e) {
       state = AuthInitial();

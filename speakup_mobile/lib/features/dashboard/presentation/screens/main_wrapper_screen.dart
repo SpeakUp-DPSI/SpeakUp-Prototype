@@ -19,80 +19,117 @@ class _MainWrapperScreenState extends ConsumerState<MainWrapperScreen> {
     final authState = ref.watch(authProvider);
     bool isStudent = true;
     if (authState is AuthSuccess) {
-      isStudent = authState.user.roles.contains('siswa');
+      final role = authState.user.roles.isNotEmpty
+          ? authState.user.roles.first.toLowerCase()
+          : 'siswa';
+      isStudent = role.contains('siswa') || authState.user.roles.isEmpty;
     }
 
     return Scaffold(
       body: widget.navigationShell,
-      floatingActionButton: isStudent ? FloatingActionButton(
-        onPressed: () {
-          context.push('/report/create');
-        },
-        backgroundColor: AppTheme.primary600,
-        child: const Icon(Icons.add, color: Colors.white),
-      ) : null,
+      floatingActionButton: isStudent
+          ? Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: AppTheme.primary600,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primary600.withValues(alpha: 0.4),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () => context.push('/report/create'),
+                  child: const Icon(Icons.add, color: Colors.white, size: 28),
+                ),
+              ),
+            )
+          : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
+          color: Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -5),
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 16,
+              offset: const Offset(0, -4),
             ),
           ],
         ),
-        child: BottomNavigationBar(
-          currentIndex: widget.navigationShell.currentIndex,
-          onTap: (index) {
-            if (index == 2) {
-              if (isStudent) {
-                context.push('/report/create');
-              } else {
-                context.push('/reports');
-              }
-              return; // Jangan goBranch untuk index 2, langsung push rute baru
-            }
-            widget.navigationShell.goBranch(
-              index,
-              initialLocation: index == widget.navigationShell.currentIndex,
-            );
-          },
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: AppTheme.primary600,
-          unselectedItemColor: AppTheme.neutral500,
-          backgroundColor: Colors.white,
+        child: BottomAppBar(
+          color: Colors.white,
           elevation: 0,
-          items: [
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home),
-              label: 'Beranda',
+          notchMargin: isStudent ? 8 : 0,
+          shape: isStudent ? const CircularNotchedRectangle() : null,
+          child: SizedBox(
+            height: 60,
+            child: isStudent
+                ? Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _navItem(0, Icons.home_outlined, Icons.home_rounded, 'Beranda'),
+                      _navItem(1, Icons.history_outlined, Icons.history_rounded, 'Riwayat'),
+                      const SizedBox(width: 60), // FAB placeholder
+                      _navItem(3, Icons.list_alt_outlined, Icons.list_alt_rounded, 'Status'),
+                      _navItem(4, Icons.person_outline_rounded, Icons.person_rounded, 'Profil'),
+                    ],
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _navItem(0, Icons.home_outlined, Icons.home_rounded, 'Beranda'),
+                      _navItem(1, Icons.article_outlined, Icons.article_rounded, 'Laporan'),
+                      _navItem(2, Icons.group_outlined, Icons.group_rounded, 'Mediasi'),
+                      _navItem(3, Icons.bar_chart_outlined, Icons.bar_chart_rounded, 'Rekap'),
+                      _navItem(4, Icons.person_outline_rounded, Icons.person_rounded, 'Profil'),
+                    ],
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _navItem(int index, IconData icon, IconData activeIcon, String label) {
+    final isActive = widget.navigationShell.currentIndex == index;
+    final branchIndex = index;
+
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          widget.navigationShell.goBranch(
+            branchIndex,
+            initialLocation:
+                branchIndex == widget.navigationShell.currentIndex,
+          );
+        },
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isActive ? activeIcon : icon,
+              color: isActive ? AppTheme.primary600 : AppTheme.neutral400,
+              size: 24,
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.history_outlined),
-              activeIcon: Icon(Icons.history),
-              label: 'Riwayat',
-            ),
-            if (isStudent)
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.add, color: Colors.transparent),
-                label: 'Lapor',
-              )
-            else
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.dashboard_customize),
-                label: 'Kelola',
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight:
+                    isActive ? FontWeight.w600 : FontWeight.normal,
+                color:
+                    isActive ? AppTheme.primary600 : AppTheme.neutral400,
               ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.notifications_outlined),
-              activeIcon: Icon(Icons.notifications),
-              label: 'Notifikasi',
-            ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Profil',
             ),
           ],
         ),
