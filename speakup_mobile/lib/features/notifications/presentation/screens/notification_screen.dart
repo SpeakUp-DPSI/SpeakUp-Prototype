@@ -186,7 +186,17 @@ class NotificationScreen extends ConsumerWidget {
             } catch (_) {}
           }
           if (notification.referenceId != null && context.mounted) {
-            context.push('/report/${notification.referenceId}');
+            switch (notification.type) {
+              case 'mediation':
+                context.push('/mediation/${notification.referenceId}');
+                break;
+              case 'follow_up':
+                context.push('/followup/${notification.referenceId}');
+                break;
+              default:
+                context.push('/report/${notification.referenceId}');
+                break;
+            }
           }
         },
       ),

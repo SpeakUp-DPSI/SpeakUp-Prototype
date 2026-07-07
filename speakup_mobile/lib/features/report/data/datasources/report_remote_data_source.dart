@@ -2,14 +2,30 @@ import 'package:dio/dio.dart';
 import '../../../../core/network/api_client.dart';
 import '../models/report_model.dart';
 
+class PaginatedReports {
+  final List<ReportModel> data;
+  final int currentPage;
+  final int lastPage;
+  final int total;
+  final int perPage;
+
+  PaginatedReports({
+    required this.data,
+    required this.currentPage,
+    required this.lastPage,
+    required this.total,
+    required this.perPage,
+  });
+}
+
 class ReportRemoteDataSource {
   final ApiClient apiClient;
 
   ReportRemoteDataSource(this.apiClient);
 
-  Future<List<ReportModel>> getReports({String? search, String? status, String? category, String? sort}) async {
+  Future<PaginatedReports> getReports({String? search, String? status, String? category, String? sort, int page = 1}) async {
     try {
-      final queryParams = <String, dynamic>{};
+      final queryParams = <String, dynamic>{'page': page};
       if (search != null && search.isNotEmpty) queryParams['search'] = search;
       if (status != null && status.isNotEmpty) queryParams['status'] = status;
       if (category != null && category.isNotEmpty) queryParams['category'] = category;
@@ -18,17 +34,22 @@ class ReportRemoteDataSource {
       final response = await apiClient.dio.get('/reports', queryParameters: queryParams);
       if (response.data['success'] == true) {
         final responseData = response.data['data'];
+        final meta = response.data['meta'];
 
         List<dynamic> list;
-        if (responseData is Map && responseData.containsKey('data')) {
-          list = responseData['data'] as List;
-        } else if (responseData is List) {
+        if (responseData is List) {
           list = responseData;
         } else {
           list = [];
         }
 
-        return list.map((json) => ReportModel.fromJson(json)).toList();
+        return PaginatedReports(
+          data: list.map((json) => ReportModel.fromJson(json)).toList(),
+          currentPage: meta?['current_page'] ?? 1,
+          lastPage: meta?['last_page'] ?? 1,
+          total: meta?['total'] ?? 0,
+          perPage: meta?['per_page'] ?? 10,
+        );
       }
       throw Exception(response.data['message']);
     } on DioException catch (e) {

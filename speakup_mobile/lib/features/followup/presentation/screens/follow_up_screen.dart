@@ -3,35 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/network/api_provider.dart';
 import '../../../../core/widgets/empty_state_widget.dart';
-
-class FollowUpModel {
-  final int id;
-  final int reportId;
-  final int executorId;
-  final String actionTaken;
-  final DateTime? followUpDate;
-  final String? reportCode;
-
-  FollowUpModel({
-    required this.id,
-    required this.reportId,
-    required this.executorId,
-    required this.actionTaken,
-    this.followUpDate,
-    this.reportCode,
-  });
-
-  factory FollowUpModel.fromJson(Map<String, dynamic> json) {
-    return FollowUpModel(
-      id: json['id'],
-      reportId: json['report_id'],
-      executorId: json['executor_id'] ?? json['user_id'] ?? 0,
-      actionTaken: json['action_taken'] ?? '',
-      followUpDate: json['follow_up_date'] != null ? DateTime.parse(json['follow_up_date']) : null,
-      reportCode: json['report']?['report_code'],
-    );
-  }
-}
+import '../../data/models/follow_up_model.dart';
 
 final followUpsProvider = FutureProvider.autoDispose<List<FollowUpModel>>((ref) async {
   try {
@@ -50,7 +22,7 @@ final followUpsProvider = FutureProvider.autoDispose<List<FollowUpModel>>((ref) 
       
       List<FollowUpModel> followUps = [];
       for (var report in reportList) {
-        if (report['follow_ups'] != null) {
+        if (report['follow_ups'] != null && (report['follow_ups'] as List).isNotEmpty) {
           for (var fu in report['follow_ups']) {
             fu['report'] = {'report_code': report['report_code']};
             followUps.add(FollowUpModel.fromJson(fu));

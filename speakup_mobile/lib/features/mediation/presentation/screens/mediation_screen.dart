@@ -4,45 +4,12 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/network/api_provider.dart';
 import '../../../../core/widgets/empty_state_widget.dart';
-
-class MediationModel {
-  final int id;
-  final int reportId;
-  final int mediatorId;
-  final DateTime scheduleDate;
-  final String location;
-  final String status;
-  final String? result;
-  final String? reportCode;
-
-  MediationModel({
-    required this.id,
-    required this.reportId,
-    required this.mediatorId,
-    required this.scheduleDate,
-    required this.location,
-    required this.status,
-    this.result,
-    this.reportCode,
-  });
-
-  factory MediationModel.fromJson(Map<String, dynamic> json) {
-    return MediationModel(
-      id: json['id'],
-      reportId: json['report_id'],
-      mediatorId: json['mediator_id'],
-      scheduleDate: DateTime.parse(json['schedule_date']),
-      location: json['location'] ?? '',
-      status: json['status'] ?? 'scheduled',
-      result: json['result'],
-      reportCode: json['report']?['report_code'],
-    );
-  }
-}
+import '../../data/models/mediation_model.dart';
 
 final mediationsProvider = FutureProvider.autoDispose<List<MediationModel>>((ref) async {
+  final apiClient = ref.read(apiClientProvider);
+  
   try {
-    final apiClient = ref.read(apiClientProvider);
     final response = await apiClient.dio.get('/reports');
     if (response.data['success'] == true) {
       final responseData = response.data['data'];
@@ -57,7 +24,7 @@ final mediationsProvider = FutureProvider.autoDispose<List<MediationModel>>((ref
       
       List<MediationModel> mediations = [];
       for (var report in reportList) {
-        if (report['mediations'] != null) {
+        if (report['mediations'] != null && (report['mediations'] as List).isNotEmpty) {
           for (var m in report['mediations']) {
             m['report'] = {'report_code': report['report_code']};
             mediations.add(MediationModel.fromJson(m));
@@ -172,7 +139,7 @@ class MediationScreen extends ConsumerWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
-              onPressed: () => context.push('/mediation/${mediation.id}'),
+              onPressed: () => context.push('/mediation-detail', extra: mediation),
               child: const Text('Lihat Detail'),
             ),
           ),

@@ -137,7 +137,7 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
           // ─── Count + Sort ──────────────────────────────────────────────
           Consumer(
             builder: (context, ref, _) {
-              final reportsAsync = ref.watch(reportsProvider);
+              final reportsAsync = ref.watch(reportsListProvider);
               return reportsAsync.when(
                 loading: () => const SizedBox.shrink(),
                 error: (e, _) => const SizedBox.shrink(),
@@ -217,7 +217,7 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
   Widget _buildReportList() {
     return Consumer(
       builder: (context, ref, _) {
-        final reportsAsync = ref.watch(reportsProvider);
+        final reportsAsync = ref.watch(reportsListProvider);
 
         return reportsAsync.when(
           loading: () =>
@@ -240,7 +240,7 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
               );
             }
             return RefreshIndicator(
-              onRefresh: () async => ref.invalidate(reportsProvider),
+              onRefresh: () async => ref.invalidate(reportsListProvider),
               child: ListView.builder(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                 itemCount: filtered.length,
@@ -307,7 +307,7 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
                       ),
                       const Spacer(),
                       Text(
-                        report.category ?? _getCategoryLabel(report.title),
+                        report.category ?? _getCategoryLabel(report.title, category: report.category),
                         style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
@@ -330,7 +330,7 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          _mockReporterName(report.reporterId),
+                          _getReporterName(report),
                           style: const TextStyle(
                               fontSize: 11, color: AppTheme.neutral500),
                           overflow: TextOverflow.ellipsis,
@@ -343,7 +343,7 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        _mockClass(),
+                        _getReporterClass(report),
                         style: const TextStyle(
                             fontSize: 11, color: AppTheme.neutral400),
                       ),
@@ -395,18 +395,27 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
     return Icons.description_outlined;
   }
 
-  String _getCategoryLabel(String title) {
+  String _getCategoryLabel(String title, {String? category}) {
+    if (category != null && category.isNotEmpty) return category;
     if (title.toLowerCase().contains('verbal')) return 'Verbal';
     if (title.toLowerCase().contains('fisik')) return 'Fisik';
-    return 'Verbal';
+    if (title.toLowerCase().contains('cyber')) return 'Cyber';
+    return 'Lainnya';
   }
 
-  String _mockReporterName(String? id) {
-    if (id == null || id.isEmpty) return 'Rizky Maulana';
-    return 'Siswa #$id';
+  String _getReporterName(ReportModel report) {
+    if (report.isAnonymous) return 'Anonim';
+    if (report.reporter != null) {
+      return report.reporter!['name']?.toString() ?? 'Siswa';
+    }
+    if (report.korban?.name != null) return report.korban!.name!;
+    return 'Siswa';
   }
 
-  String _mockClass() => 'Kelas X-2';
+  String _getReporterClass(ReportModel report) {
+    if (report.korban?.className != null) return report.korban!.className!;
+    return '-';
+  }
 
   Color _getBadgeColor(String status) {
     switch (status) {

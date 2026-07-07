@@ -32,16 +32,16 @@ class AdminDashboardScreen extends ConsumerWidget {
               crossAxisSpacing: 16,
               children: [
                 _buildMenuCard('Laporan', Icons.description, AppTheme.primary600, () {
-                  context.push('/reports');
+                  context.go('/reports');
                 }),
                 _buildMenuCard('Notifikasi', Icons.notifications, AppTheme.warning600, () {
-                  context.push('/notifications');
+                  context.go('/notifications');
                 }),
                 _buildMenuCard('Audit Logs', Icons.receipt_long, AppTheme.info600, () {
                   context.push('/audit-logs');
                 }),
                 _buildMenuCard('Statistik', Icons.analytics, AppTheme.success600, () {
-                  context.push('/reports');
+                  context.go('/reports');
                 }),
               ],
             ),

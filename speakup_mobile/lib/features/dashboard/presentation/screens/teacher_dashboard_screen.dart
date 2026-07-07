@@ -20,7 +20,7 @@ class _TeacherDashboardScreenState
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final statsAsync = ref.watch(dashboardStatsProvider);
-    final reportsAsync = ref.watch(reportsProvider);
+    final reportsAsync = ref.watch(reportsListProvider);
 
     String userName = 'Bu Guru';
     if (authState is AuthSuccess) {
@@ -44,7 +44,7 @@ class _TeacherDashboardScreenState
         child: RefreshIndicator(
           onRefresh: () async {
             ref.invalidate(dashboardStatsProvider);
-            ref.invalidate(reportsProvider);
+            ref.invalidate(reportsListProvider);
           },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -327,13 +327,51 @@ class _TeacherDashboardScreenState
                               ),
                             ),
                             const Divider(height: 1),
-                            _mediationItem('28', 'JUNI',
-                                'LP-2026-0019', 'Mediasi antara siswa',
-                                '10.00 – 10.45 WIB', 4),
-                            const Divider(height: 1, indent: 16, endIndent: 16),
-                            _mediationItem('27', 'JUNI',
-                                'LP-2026-0019', 'Mediasi antara siswa',
-                                '10.00 – 10.45 WIB', 4),
+                            reportsAsync.when(
+                              loading: () => const Padding(
+                                padding: EdgeInsets.all(16),
+                                child: Center(
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2)),
+                              ),
+                              error: (_, __) => const SizedBox.shrink(),
+                              data: (reports) {
+                                final mediationReports = reports
+                                    .where((r) =>
+                                        r.status == 'mediation' &&
+                                        r.incidentDate != null)
+                                    .take(3)
+                                    .toList();
+                                if (mediationReports.isEmpty) {
+                                  return const Padding(
+                                    padding: EdgeInsets.all(16),
+                                    child: Center(
+                                      child: Text(
+                                        'Belum ada jadwal mediasi',
+                                        style: TextStyle(
+                                            fontSize: 12,
+                                            color: AppTheme.neutral400),
+                                      ),
+                                    ),
+                                  );
+                                }
+                                return Column(
+                                  children: [
+                                    for (var i = 0;
+                                        i < mediationReports.length;
+                                        i++) ...[
+                                      if (i > 0)
+                                        const Divider(
+                                            height: 1,
+                                            indent: 16,
+                                            endIndent: 16),
+                                      _mediationItemFromReport(
+                                          mediationReports[i]),
+                                    ],
+                                  ],
+                                );
+                              },
+                            ),
                             const SizedBox(height: 8),
                           ],
                         ),
@@ -404,7 +442,7 @@ class _TeacherDashboardScreenState
           Stack(
             children: [
               IconButton(
-                onPressed: () => context.push('/notifications'),
+                onPressed: () => context.go('/notifications'),
                 icon: const Icon(Icons.notifications_outlined,
                     color: AppTheme.neutral700),
                 padding: EdgeInsets.zero,
@@ -515,7 +553,14 @@ class _TeacherDashboardScreenState
   Widget _quickAction(
       BuildContext context, IconData icon, String label, String route) {
     return GestureDetector(
-      onTap: () => context.push(route),
+      onTap: () {
+        // Shell branch routes use go(), full-screen routes use push()
+        if (route == '/reports' || route == '/notifications' || route == '/mediations') {
+          context.go(route);
+        } else {
+          context.push(route);
+        }
+      },
       child: Column(
         children: [
           Container(
@@ -544,8 +589,16 @@ class _TeacherDashboardScreenState
 
   // ─── Mediation Item ───────────────────────────────────────────────────────
 
-  Widget _mediationItem(String day, String month, String code, String desc,
-      String time, int count) {
+  Widget _mediationItemFromReport(report) {
+    final monthNames = [
+      '', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    final dateParts = (report.incidentDate ?? '').split('-');
+    final day = dateParts.length >= 3 ? dateParts[2].substring(0, 2) : '--';
+    final monthIdx = dateParts.length >= 2 ? int.tryParse(dateParts[1]) ?? 1 : 1;
+    final month = monthNames[monthIdx].toUpperCase().substring(0, 3);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
@@ -567,29 +620,19 @@ class _TeacherDashboardScreenState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(code,
+                Text(report.reportCode,
                     style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
                         color: AppTheme.primary600)),
-                Text(desc,
+                Text(report.category ?? report.title,
                     style: const TextStyle(
                         fontSize: 12, color: AppTheme.neutral600)),
-                Text(time,
+                Text(report.incidentLocation ?? '',
                     style: const TextStyle(
                         fontSize: 11, color: AppTheme.neutral400)),
               ],
             ),
-          ),
-          Row(
-            children: [
-              const Icon(Icons.group_outlined,
-                  size: 16, color: AppTheme.neutral400),
-              const SizedBox(width: 2),
-              Text('$count',
-                  style: const TextStyle(
-                      fontSize: 12, color: AppTheme.neutral500)),
-            ],
           ),
         ],
       ),

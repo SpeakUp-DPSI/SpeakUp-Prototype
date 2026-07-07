@@ -1,9 +1,38 @@
+class ReportParticipant {
+  final int id;
+  final String role;
+  final String? userId;
+  final String? name;
+  final String? className;
+  final String? notes;
+
+  ReportParticipant({
+    required this.id,
+    required this.role,
+    this.userId,
+    this.name,
+    this.className,
+    this.notes,
+  });
+
+  factory ReportParticipant.fromJson(Map<String, dynamic> json) {
+    return ReportParticipant(
+      id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
+      role: json['role']?.toString() ?? '',
+      userId: json['user_id']?.toString(),
+      name: json['name']?.toString(),
+      className: json['class_name']?.toString(),
+      notes: json['notes']?.toString(),
+    );
+  }
+}
+
 class ReportModel {
   final int id;
   final String reportCode;
   final String title;
   final String description;
-  final String status; // 'Menunggu Validasi', 'Diproses', 'Selesai', 'Ditolak'
+  final String status;
   final String? incidentLocation;
   final String? incidentDate;
   final String? category;
@@ -11,6 +40,9 @@ class ReportModel {
   final String? bkNote;
   final String? reporterId;
   final String? reportedId;
+  final List<ReportParticipant> participants;
+  final Map<String, dynamic>? reporter;
+  final List<dynamic>? statusHistories;
 
   ReportModel({
     required this.id,
@@ -25,6 +57,9 @@ class ReportModel {
     this.bkNote,
     this.reporterId,
     this.reportedId,
+    this.participants = const [],
+    this.reporter,
+    this.statusHistories,
   });
 
   factory ReportModel.fromJson(Map<String, dynamic> json) {
@@ -41,8 +76,23 @@ class ReportModel {
       bkNote: json['bk_note']?.toString(),
       reporterId: json['reporter_id']?.toString(),
       reportedId: json['reported_id']?.toString(),
+      participants: (json['participants'] as List<dynamic>?)
+              ?.map((e) => ReportParticipant.fromJson(e))
+              .toList() ??
+          [],
+      reporter: json['reporter'] as Map<String, dynamic>?,
+      statusHistories: json['status_histories'] as List<dynamic>?,
     );
   }
+
+  ReportParticipant? get korban =>
+      participants.where((p) => p.role == 'korban').firstOrNull;
+
+  ReportParticipant? get terlapor =>
+      participants.where((p) => p.role == 'terlapor').firstOrNull;
+
+  List<ReportParticipant> get saksi =>
+      participants.where((p) => p.role == 'saksi').toList();
 
   ReportModel copyWith({
     int? id,
@@ -57,6 +107,8 @@ class ReportModel {
     String? bkNote,
     String? reporterId,
     String? reportedId,
+    List<ReportParticipant>? participants,
+    Map<String, dynamic>? reporter,
   }) {
     return ReportModel(
       id: id ?? this.id,
@@ -71,6 +123,9 @@ class ReportModel {
       bkNote: bkNote ?? this.bkNote,
       reporterId: reporterId ?? this.reporterId,
       reportedId: reportedId ?? this.reportedId,
+      participants: participants ?? this.participants,
+      reporter: reporter ?? this.reporter,
+      statusHistories: statusHistories ?? this.statusHistories,
     );
   }
 }

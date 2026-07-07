@@ -144,7 +144,7 @@ class ProfileScreen extends ConsumerWidget {
       contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
       leading: Container(
         padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(color: (iconColor ?? AppTheme.neutral500).withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+        decoration: BoxDecoration(color: (iconColor ?? AppTheme.neutral500).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
         child: Icon(icon, color: iconColor ?? AppTheme.neutral700, size: 24),
       ),
       title: Text(title, style: TextStyle(fontWeight: FontWeight.w500, color: textColor ?? AppTheme.neutral900)),

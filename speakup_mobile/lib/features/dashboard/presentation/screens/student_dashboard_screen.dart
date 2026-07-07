@@ -33,7 +33,7 @@ class _StudentDashboardScreenState
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
-    final reportsAsync = ref.watch(reportsProvider);
+    final reportsAsync = ref.watch(reportsListProvider);
 
     String userName = 'Siswa';
     if (authState is AuthSuccess) {
@@ -45,7 +45,7 @@ class _StudentDashboardScreenState
       backgroundColor: const Color(0xFFF5F7FA),
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: () async => ref.invalidate(reportsProvider),
+            onRefresh: () async => ref.invalidate(reportsListProvider),
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             child: Column(
@@ -112,7 +112,7 @@ class _StudentDashboardScreenState
                             ),
                           ),
                           GestureDetector(
-                            onTap: () => context.push('/history'),
+                            onTap: () => context.go('/reports'),
                             child: const Row(
                               children: [
                                 Text(
@@ -202,7 +202,7 @@ class _StudentDashboardScreenState
           Stack(
             children: [
               IconButton(
-                onPressed: () => context.push('/notifications'),
+                onPressed: () => context.go('/notifications'),
                 icon: const Icon(Icons.notifications_outlined,
                     color: AppTheme.neutral700, size: 26),
                 padding: EdgeInsets.zero,

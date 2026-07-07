@@ -28,18 +28,14 @@ class ReportController extends Controller
             $reports = $this->reportRepo->getAll($request->all());
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Daftar laporan',
-            'data' => $reports
-        ]);
+        return $this->paginatedResponse($reports, 'Daftar laporan');
     }
 
     public function store(Request $request)
     {
         $request->validate([
             'title' => 'required|string|max:255',
-            'description' => 'required|string',
+            'description' => 'nullable|string',
             'category' => 'nullable|string',
             'incident_location' => 'nullable|string',
             'incident_date' => 'nullable|string',
@@ -54,11 +50,7 @@ class ReportController extends Controller
 
         $report = $this->reportService->createReport($request->all(), $request->user());
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Laporan berhasil dibuat',
-            'data' => $report
-        ], 201);
+        return $this->successResponse($report, 'Laporan berhasil dibuat', 201);
     }
 
     public function show($id, Request $request)
@@ -66,19 +58,12 @@ class ReportController extends Controller
         $report = $this->reportRepo->getById($id);
 
         if ($request->user()->hasRole('siswa') && $report->reporter_id !== $request->user()->id) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized access'
-            ], 403);
+            return $this->errorResponse('Akses tidak diizinkan', 403);
         }
 
         $report->load(['participants', 'statusHistories', 'validations.validator', 'mediations.mediator', 'followUps.executor']);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Detail laporan',
-            'data' => $report
-        ]);
+        return $this->successResponse($report, 'Detail laporan');
     }
 
     public function updateStatus($id, Request $request)
@@ -91,15 +76,11 @@ class ReportController extends Controller
         $user = $request->user();
 
         if (!$user->hasRole('guru_bk') && !$user->hasRole('admin')) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized access'], 403);
+            return $this->errorResponse('Akses tidak diizinkan', 403);
         }
 
         $report = $this->reportService->updateStatus($id, $request->status, $user->id, $request->notes);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Status laporan berhasil diperbarui',
-            'data' => $report
-        ]);
+        return $this->successResponse($report, 'Status laporan berhasil diperbarui');
     }
 }

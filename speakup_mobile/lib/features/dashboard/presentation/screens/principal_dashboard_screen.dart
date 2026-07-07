@@ -22,7 +22,7 @@ class _PrincipalDashboardScreenState
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final statsAsync = ref.watch(dashboardStatsProvider);
-    final reportsAsync = ref.watch(reportsProvider);
+    final reportsAsync = ref.watch(reportsListProvider);
 
     String userName = 'Pak Kepala';
     if (authState is AuthSuccess) {
@@ -35,7 +35,7 @@ class _PrincipalDashboardScreenState
         child: RefreshIndicator(
           onRefresh: () async {
             ref.invalidate(dashboardStatsProvider);
-            ref.invalidate(reportsProvider);
+            ref.invalidate(reportsListProvider);
           },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -569,7 +569,14 @@ class _PrincipalDashboardScreenState
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: actions.map((a) {
         return GestureDetector(
-          onTap: () => context.push(a['route'] as String),
+          onTap: () {
+            final route = a['route'] as String;
+            if (route == '/reports' || route == '/notifications' || route == '/mediations') {
+              context.go(route);
+            } else {
+              context.push(route);
+            }
+          },
           child: Column(
             children: [
               Container(

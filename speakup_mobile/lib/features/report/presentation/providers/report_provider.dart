@@ -15,9 +15,82 @@ final reportRepositoryProvider = Provider<ReportRepository>((ref) {
   return ReportRepository(remote);
 });
 
-final reportsProvider = FutureProvider.autoDispose<List<ReportModel>>((ref) async {
-  final repository = ref.read(reportRepositoryProvider);
-  return await repository.getReports();
+class ReportsNotifier extends AsyncNotifier<PaginatedReports> {
+  int _currentPage = 1;
+  String? _search;
+  String? _status;
+  String? _category;
+  String? _sort;
+
+  @override
+  Future<PaginatedReports> build() async {
+    final repository = ref.read(reportRepositoryProvider);
+    return await repository.getReports(page: _currentPage);
+  }
+
+  Future<void> loadMore() async {
+    final current = state.value;
+    if (current == null || _currentPage >= current.lastPage) return;
+    _currentPage++;
+    final repository = ref.read(reportRepositoryProvider);
+    final next = await repository.getReports(
+      search: _search,
+      status: _status,
+      category: _category,
+      sort: _sort,
+      page: _currentPage,
+    );
+    state = AsyncData(PaginatedReports(
+      data: [...current.data, ...next.data],
+      currentPage: next.currentPage,
+      lastPage: next.lastPage,
+      total: next.total,
+      perPage: next.perPage,
+    ));
+  }
+
+  Future<void> refresh() async {
+    _currentPage = 1;
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final repository = ref.read(reportRepositoryProvider);
+      return await repository.getReports(
+        search: _search,
+        status: _status,
+        category: _category,
+        sort: _sort,
+        page: 1,
+      );
+    });
+  }
+
+  Future<void> filter({String? search, String? status, String? category, String? sort}) async {
+    _search = search;
+    _status = status;
+    _category = category;
+    _sort = sort;
+    _currentPage = 1;
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final repository = ref.read(reportRepositoryProvider);
+      return await repository.getReports(
+        search: search,
+        status: status,
+        category: category,
+        sort: sort,
+        page: 1,
+      );
+    });
+  }
+}
+
+final reportsProvider = AsyncNotifierProvider<ReportsNotifier, PaginatedReports>(() {
+  return ReportsNotifier();
+});
+
+final reportsListProvider = FutureProvider.autoDispose<List<ReportModel>>((ref) async {
+  final reportsAsync = ref.watch(reportsProvider);
+  return reportsAsync.whenOrNull(data: (paginated) => paginated.data) ?? [];
 });
 
 final reportDetailProvider = FutureProvider.autoDispose.family<ReportModel?, int>((ref, id) async {
@@ -46,8 +119,8 @@ class ReportSearchNotifier extends Notifier<List<ReportModel>> {
       }
       try {
         final repository = ref.read(reportRepositoryProvider);
-        final results = await repository.getReports(search: query);
-        state = results;
+        final result = await repository.getReports(search: query);
+        state = result.data;
       } catch (_) {
         state = [];
       }

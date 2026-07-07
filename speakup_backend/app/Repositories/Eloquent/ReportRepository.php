@@ -8,9 +8,11 @@ use App\Repositories\Contracts\ReportRepositoryInterface;
 
 class ReportRepository implements ReportRepositoryInterface
 {
+    private array $defaultIncludes = ['reporter', 'evidences', 'participants', 'mediations', 'followUps', 'statusHistories'];
+
     public function getAll(array $filters = [])
     {
-        return Report::with(['reporter', 'evidences'])
+        return Report::with($this->defaultIncludes)
             ->when(isset($filters['status']) && $filters['status'] !== '', function ($query) use ($filters) {
                 return $query->where('status', $filters['status']);
             })
@@ -42,12 +44,12 @@ class ReportRepository implements ReportRepositoryInterface
 
     public function getById(int $id)
     {
-        return Report::with(['reporter', 'evidences', 'validations', 'mediations', 'followUps'])->findOrFail($id);
+        return Report::with(array_merge($this->defaultIncludes, ['validations.validator', 'mediations.mediator', 'followUps.executor']))->findOrFail($id);
     }
 
     public function getByReporter(int $reporterId, array $filters = [])
     {
-        return Report::with(['evidences'])
+        return Report::with($this->defaultIncludes)
             ->where('reporter_id', $reporterId)
             ->when(isset($filters['status']) && $filters['status'] !== '', function ($query) use ($filters) {
                 return $query->where('status', $filters['status']);

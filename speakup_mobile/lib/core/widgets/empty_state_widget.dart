@@ -31,22 +31,36 @@ class EmptyStateWidget extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: (iconColor ?? AppTheme.primary600).withOpacity(0.08),
+                color: (iconColor ?? AppTheme.primary600).withValues(
+                  alpha: 0.08,
+                ),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, size: 64, color: iconColor ?? AppTheme.primary600),
+              child: Icon(
+                icon,
+                size: 64,
+                color: iconColor ?? AppTheme.primary600,
+              ),
             ),
             const SizedBox(height: 24),
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.neutral900),
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.neutral900,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 14, color: AppTheme.neutral500, height: 1.5),
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppTheme.neutral500,
+                height: 1.5,
+              ),
             ),
             if (actionLabel != null && onAction != null) ...[
               const SizedBox(height: 24),
@@ -55,7 +69,10 @@ class EmptyStateWidget extends StatelessWidget {
                 icon: const Icon(Icons.add),
                 label: Text(actionLabel!),
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
                 ),
               ),
             ],

@@ -57,7 +57,7 @@ class _ReviewReportScreenState extends ConsumerState<ReviewReportScreen> {
           .read(createReportProvider.notifier)
           .create(data, filePaths: filePaths);
 
-      ref.invalidate(reportsProvider);
+      ref.invalidate(reportsListProvider);
 
       if (mounted) {
         final code = created?.reportCode ?? 'REP-BARU';

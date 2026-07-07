@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
+import '../../../../core/network/api_provider.dart';
 import '../../../../core/widgets/empty_state_widget.dart';
 import '../providers/report_provider.dart';
 import 'package:go_router/go_router.dart';
@@ -211,7 +212,7 @@ class ReportDetailScreen extends ConsumerWidget {
                               child: _infoCol(
                                 Icons.access_time_outlined,
                                 'Wktu Kejadian',
-                                '10:00 WIB',
+                                report.incidentDate ?? '-',
                               ),
                             ),
                             Expanded(
@@ -248,23 +249,45 @@ class ReportDetailScreen extends ConsumerWidget {
                 const SizedBox(height: 12),
 
                 // ─── Identitas Pelapor ────────────────────────────────────
-                _personCard('Identitas Pelapor', 'Siswa', 'Kelas X-2',
-                    report.isAnonymous),
+                _personCard(
+                  title: 'Identitas Pelapor',
+                  name: report.reporter?['name']?.toString() ?? (report.isAnonymous ? 'Anonim' : 'Siswa'),
+                  role: 'Pelapor',
+                  className: null,
+                  isAnonymous: report.isAnonymous,
+                ),
                 const SizedBox(height: 12),
 
                 // ─── Data Korban ──────────────────────────────────────────
-                _personCard('Data Korban', 'Siswa', 'Kelas X-2',
-                    report.isAnonymous),
+                _personCard(
+                  title: 'Data Korban',
+                  name: report.korban?.name ?? '-',
+                  role: 'Korban',
+                  className: report.korban?.className,
+                  isAnonymous: false,
+                ),
                 const SizedBox(height: 12),
 
                 // ─── Data Terlapor ────────────────────────────────────────
-                _personCard('Data Terlapor', 'Siswa', 'Kelas X-2',
-                    false),
+                _personCard(
+                  title: 'Data Terlapor',
+                  name: report.terlapor?.name ?? '-',
+                  role: 'Terlapor',
+                  className: report.terlapor?.className,
+                  isAnonymous: false,
+                ),
                 const SizedBox(height: 12),
 
                 // ─── Data Saksi ───────────────────────────────────────────
-                _personCard('Data Saksi (2)', 'Siswa', 'Kelas X-2',
-                    false, showBadge: false),
+                if (report.saksi.isNotEmpty)
+                  _personCard(
+                    title: 'Data Saksi (${report.saksi.length})',
+                    name: report.saksi.first.name ?? '-',
+                    role: 'Saksi',
+                    className: report.saksi.first.className,
+                    isAnonymous: false,
+                    showBadge: false,
+                  ),
                 const SizedBox(height: 12),
 
                 // ─── Aksi Validasi ────────────────────────────────────────
@@ -274,7 +297,7 @@ class ReportDetailScreen extends ConsumerWidget {
                     children: [
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: () => _handleStatusUpdate(
+                          onPressed: () => _handleValidation(
                               context, ref, report.id, 'rejected'),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppTheme.danger600,
@@ -291,8 +314,8 @@ class ReportDetailScreen extends ConsumerWidget {
                       const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: () => _handleStatusUpdate(
-                              context, ref, report.id, 'processing'),
+                          onPressed: () => _handleValidation(
+                              context, ref, report.id, 'valid'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppTheme.success600,
                             shape: RoundedRectangleBorder(
@@ -307,6 +330,76 @@ class ReportDetailScreen extends ConsumerWidget {
                     ],
                   ),
                   const SizedBox(height: 16),
+                ],
+
+                // ─── Aksi Mediasi (guru_bk/admin saat status processing) ──
+                if (canValidate && report.status == 'processing') ...[
+                  const SizedBox(height: 4),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => context.push(
+                          '/report/${report.id}/create-mediation',
+                          extra: {
+                            'reportId': report.id,
+                            'reportCode': report.reportCode,
+                          }),
+                      icon: const Icon(Icons.handshake,
+                          color: Colors.white),
+                      label: const Text('Jadwalkan Mediasi',
+                          style: TextStyle(color: Colors.white)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF7C3AED),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14)),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => context.push(
+                          '/report/${report.id}/create-follow-up',
+                          extra: {
+                            'reportId': report.id,
+                            'reportCode': report.reportCode,
+                          }),
+                      icon: const Icon(Icons.task_alt,
+                          color: AppTheme.success600),
+                      label: const Text('Catat Tindak Lanjut',
+                          style: TextStyle(color: AppTheme.success600)),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: AppTheme.success600),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14)),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // ─── Status History ────────────────────────────────────────
+                if (report.statusHistories != null &&
+                    report.statusHistories!.isNotEmpty) ...[
+                  _sectionCard(
+                    title: 'Riwayat Status',
+                    icon: Icons.history,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                      child: Column(
+                        children: [
+                          for (var i = 0;
+                              i < report.statusHistories!.length;
+                              i++)
+                            _buildStatusHistoryItem(
+                                report.statusHistories![i], i),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               ],
             ),
@@ -352,9 +445,14 @@ class ReportDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _personCard(String title, String role, String kelas,
-      bool isAnonymous,
-      {bool showBadge = true}) {
+  Widget _personCard({
+    required String title,
+    required String name,
+    required String role,
+    String? className,
+    required bool isAnonymous,
+    bool showBadge = true,
+  }) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -396,9 +494,9 @@ class ReportDetailScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Andi Pratama',
-                      style: TextStyle(
+                    Text(
+                      name,
+                      style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 13,
                           color: AppTheme.neutral900),
@@ -411,19 +509,21 @@ class ReportDetailScreen extends ConsumerWidget {
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppTheme.neutral100,
-                  borderRadius: BorderRadius.circular(20),
+              if (className != null) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppTheme.neutral100,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    className,
+                    style: const TextStyle(
+                        fontSize: 11, color: AppTheme.neutral600),
+                  ),
                 ),
-                child: Text(
-                  kelas,
-                  style: const TextStyle(
-                      fontSize: 11, color: AppTheme.neutral600),
-                ),
-              ),
+              ],
               if (showBadge) ...[
                 const SizedBox(width: 8),
                 Container(
@@ -482,30 +582,96 @@ class ReportDetailScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _handleStatusUpdate(BuildContext context, WidgetRef ref,
-      int reportId, String newStatus) async {
+  Future<void> _handleValidation(BuildContext context, WidgetRef ref,
+      int reportId, String validationStatus) async {
     try {
-      final dataSource = ref.read(reportRemoteDataSourceProvider);
-      await dataSource.updateStatus(reportId, newStatus);
-      ref.invalidate(reportDetailProvider(reportId));
-      ref.invalidate(reportsProvider);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(
-              'Status berhasil diubah menjadi ${_formatStatus(newStatus)}'),
-          backgroundColor: newStatus == 'rejected'
-              ? AppTheme.danger600
-              : AppTheme.success600,
-        ));
+      final apiClient = ref.read(apiClientProvider);
+      final response = await apiClient.dio.post(
+        '/reports/$reportId/validations',
+        data: {
+          'status': validationStatus,
+          'notes': validationStatus == 'rejected' ? 'Ditolak oleh guru BK' : null,
+        },
+      );
+      if (response.data['success'] == true) {
+        ref.invalidate(reportDetailProvider(reportId));
+        ref.invalidate(reportsListProvider);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+                'Laporan ${validationStatus == 'valid' ? 'divalidasi' : 'ditolak'}'),
+            backgroundColor: validationStatus == 'rejected'
+                ? AppTheme.danger600
+                : AppTheme.success600,
+          ));
+        }
       }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Gagal memperbarui status: $e'),
+          content: Text('Gagal memvalidasi: $e'),
           backgroundColor: AppTheme.danger600,
         ));
       }
     }
+  }
+
+  Widget _buildStatusHistoryItem(dynamic history, int index) {
+    final statusColor = _getBadgeColor(history['status'] ?? '');
+    final statusLabel = _formatStatus(history['status'] ?? '');
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Column(
+          children: [
+            Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                color: statusColor,
+                shape: BoxShape.circle,
+              ),
+            ),
+            if (index > 0)
+              Container(
+                width: 2,
+                height: 30,
+                color: AppTheme.neutral200,
+              ),
+          ],
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                statusLabel,
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: statusColor),
+              ),
+              if (history['notes'] != null &&
+                  history['notes'].toString().isNotEmpty)
+                Text(
+                  history['notes'].toString(),
+                  style: const TextStyle(
+                      fontSize: 12, color: AppTheme.neutral600),
+                ),
+              if (history['created_at'] != null)
+                Text(
+                  history['created_at'].toString().substring(0, 19),
+                  style: const TextStyle(
+                      fontSize: 11, color: AppTheme.neutral400),
+                ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   Color _getBadgeColor(String status) {

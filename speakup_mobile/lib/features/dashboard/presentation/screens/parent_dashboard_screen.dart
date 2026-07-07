@@ -13,7 +13,7 @@ class ParentDashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final statsAsync = ref.watch(dashboardStatsProvider);
-    final reportsAsync = ref.watch(reportsProvider);
+    final reportsAsync = ref.watch(reportsListProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -24,7 +24,7 @@ class ParentDashboardScreen extends ConsumerWidget {
       body: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(dashboardStatsProvider);
-          ref.invalidate(reportsProvider);
+          ref.invalidate(reportsListProvider);
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -94,7 +94,7 @@ class ParentDashboardScreen extends ConsumerWidget {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.neutral900),
                   ),
                   TextButton(
-                    onPressed: () => context.push('/reports'),
+                    onPressed: () => context.go('/reports'),
                     child: const Text('Lihat Semua', style: TextStyle(color: AppTheme.primary600)),
                   ),
                 ],

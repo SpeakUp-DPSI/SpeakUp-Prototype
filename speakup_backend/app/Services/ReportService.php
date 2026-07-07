@@ -34,7 +34,7 @@ class ReportService
                 'reporter_id' => $user->id,
                 'title' => $data['title'],
                 'category' => $data['category'] ?? null,
-                'description' => $data['description'],
+                'description' => $data['description'] ?? '',
                 'is_anonymous' => $data['is_anonymous'] ?? false,
                 'incident_location' => $data['incident_location'] ?? null,
                 'incident_date' => $data['incident_date'] ?? null,

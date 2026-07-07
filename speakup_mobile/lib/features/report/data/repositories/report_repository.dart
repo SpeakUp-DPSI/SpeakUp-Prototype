@@ -6,12 +6,8 @@ class ReportRepository {
 
   ReportRepository(this.remoteDataSource);
 
-  Future<List<ReportModel>> getReports({String? search, String? status, String? category, String? sort}) async {
-    try {
-      return await remoteDataSource.getReports(search: search, status: status, category: category, sort: sort);
-    } catch (_) {
-      return [];
-    }
+  Future<PaginatedReports> getReports({String? search, String? status, String? category, String? sort, int page = 1}) async {
+    return await remoteDataSource.getReports(search: search, status: status, category: category, sort: sort, page: page);
   }
 
   Future<ReportModel> getReportById(int id) async {

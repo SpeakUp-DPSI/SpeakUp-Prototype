@@ -6,28 +6,51 @@ class UserModel {
   final String? avatar;
   final List<String> roles;
 
-  UserModel({
+  const UserModel({
     required this.id,
     required this.name,
     required this.email,
     this.phone,
     this.avatar,
-    required this.roles,
+    this.roles = const [],
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     var rolesList = <String>[];
     if (json['roles'] != null) {
-      rolesList = (json['roles'] as List).map((role) => role['name'].toString()).toList();
+      rolesList = (json['roles'] as List).map((role) {
+        if (role is String) return role;
+        return role['name'].toString();
+      }).toList();
     }
 
     return UserModel(
-      id: json['id'],
-      name: json['name'],
-      email: json['email'],
-      phone: json['phone'],
-      avatar: json['avatar'],
+      id: json['id'] is int
+          ? json['id']
+          : int.tryParse(json['id'].toString()) ?? 0,
+      name: json['name']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
+      phone: json['phone'] as String?,
+      avatar: json['avatar'] as String?,
       roles: rolesList,
+    );
+  }
+
+  UserModel copyWith({
+    int? id,
+    String? name,
+    String? email,
+    String? phone,
+    String? avatar,
+    List<String>? roles,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      phone: phone ?? this.phone,
+      avatar: avatar ?? this.avatar,
+      roles: roles ?? this.roles,
     );
   }
 }

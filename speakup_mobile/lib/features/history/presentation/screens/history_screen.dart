@@ -24,7 +24,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final reportsAsync = ref.watch(reportsProvider);
+    final reportsAsync = ref.watch(reportsListProvider);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -125,7 +125,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                   }
 
                   return RefreshIndicator(
-                  onRefresh: () async => ref.invalidate(reportsProvider),
+                  onRefresh: () async => ref.invalidate(reportsListProvider),
                     child: ListView.builder(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       itemCount: filtered.length,

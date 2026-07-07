@@ -29,17 +29,21 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/reports/{report}/validations', [ValidationController::class, 'index']);
     Route::post('/reports/{report}/validations', [ValidationController::class, 'store']);
 
-    // Mediations
+    // Mediations (nested under reports + standalone)
+    Route::get('/reports/{report}/mediations', [MediationController::class, 'index']);
     Route::post('/reports/{report}/mediations', [MediationController::class, 'store']);
+    Route::get('/mediations/{id}', [MediationController::class, 'show']);
+    Route::put('/mediations/{id}/status', [MediationController::class, 'updateStatus']);
 
     // Follow-ups
+    Route::get('/reports/{report}/follow-ups', [FollowUpController::class, 'index']);
     Route::post('/reports/{report}/follow-ups', [FollowUpController::class, 'store']);
 
-    // Notifications
+    // Notifications (static routes BEFORE parameterized routes)
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
-    Route::put('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
     Route::put('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+    Route::put('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
 
     // Audit Logs (Admin only)
     Route::get('/audit-logs', [AuditLogController::class, 'index']);

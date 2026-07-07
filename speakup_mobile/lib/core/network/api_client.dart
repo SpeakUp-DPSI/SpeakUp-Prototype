@@ -1,15 +1,18 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'token_manager.dart';
+import 'auth_interceptor.dart';
 
 class ApiClient {
   late Dio dio;
   final TokenManager _tokenManager = TokenManager();
 
-  static const String _baseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://127.0.0.1:8000/api',
-  );
+  String get _baseUrl {
+    if (kIsWeb) return 'http://localhost:8000/api';
+    if (Platform.isAndroid) return 'http://10.0.2.2:8000/api';
+    return 'http://127.0.0.1:8000/api';
+  }
 
   ApiClient() {
     dio = Dio(BaseOptions(
@@ -21,21 +24,7 @@ class ApiClient {
       },
     ));
 
-    dio.interceptors.add(InterceptorsWrapper(
-      onRequest: (options, handler) async {
-        final token = await _tokenManager.getToken();
-        if (token != null) {
-          options.headers['Authorization'] = 'Bearer $token';
-        }
-        return handler.next(options);
-      },
-      onError: (DioException e, handler) async {
-        if (e.response?.statusCode == 401) {
-          await _tokenManager.removeToken();
-        }
-        return handler.next(e);
-      },
-    ));
+    dio.interceptors.add(AuthInterceptor(_tokenManager));
 
     if (kDebugMode) {
       dio.interceptors.add(LogInterceptor(
