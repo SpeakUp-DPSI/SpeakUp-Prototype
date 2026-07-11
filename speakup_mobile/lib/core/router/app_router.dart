@@ -1,6 +1,8 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:responsive_framework/responsive_framework.dart';
 
 import '../../features/authentication/presentation/screens/splash_screen.dart';
 import '../../features/authentication/presentation/screens/onboarding_screen.dart';
@@ -9,6 +11,7 @@ import '../../features/authentication/presentation/screens/register_screen.dart'
 import '../../features/dashboard/presentation/screens/main_wrapper_screen.dart';
 import '../../features/dashboard/presentation/screens/dynamic_dashboard_screen.dart';
 import '../../features/dashboard/presentation/screens/dynamic_list_screen.dart';
+import '../../features/dashboard/presentation/screens/dynamic_manage_screen.dart';
 import '../../features/notifications/presentation/screens/notification_screen.dart';
 import '../../features/mediation/presentation/screens/mediation_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
@@ -25,6 +28,9 @@ import '../../features/mediation/presentation/screens/mediation_detail_page.dart
 import '../../features/followup/presentation/screens/follow_up_screen.dart';
 import '../../features/followup/presentation/screens/create_follow_up_screen.dart';
 import '../../features/dashboard/presentation/screens/admin_audit_log_screen.dart';
+import '../../features/dashboard/presentation/screens/principal_recap_screen.dart';
+import '../../features/dashboard/presentation/screens/principal_monitoring_screen.dart';
+import '../../features/dashboard/presentation/screens/admin_user_management_screen.dart';
 import '../../features/authentication/presentation/providers/auth_provider.dart';
 
 import 'route_observer.dart';
@@ -66,7 +72,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         final roles = authState.user.roles.map((r) => r.toLowerCase()).toList();
 
         // Admin-only routes.
-        if (path == '/audit-logs' && !roles.contains('admin')) {
+        if ((path == '/audit-logs' || path == '/admin/users') &&
+            !roles.contains('admin')) {
+          return '/dashboard';
+        }
+
+        // Kepsek-only routes.
+        if ((path == '/principal/recap' ||
+                path == '/principal/monitoring') &&
+            !roles.contains('kepsek') &&
+            !roles.contains('admin')) {
           return '/dashboard';
         }
       }
@@ -118,12 +133,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
 
-          // Branch 2 — Mediations (teacher BK primary; hidden for others)
+          // Branch 2 — Manage (role-specific management screens)
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/mediations',
-                builder: (context, state) => const MediationScreen(),
+                path: '/manage',
+                builder: (context, state) => const DynamicManageScreen(),
               ),
             ],
           ),
@@ -167,7 +182,30 @@ final routerProvider = Provider<GoRouter>((ref) {
       // ─── Report routes (full-screen, pushed on top of shell) ───────────────
       GoRoute(
         path: '/report/create',
-        builder: (context, state) => const CreateReportScreen(),
+        pageBuilder: (context, state) {
+          final isDesktop = ResponsiveBreakpoints.of(context).largerOrEqualTo(TABLET);
+          if (isDesktop) {
+            return CustomTransitionPage(
+              key: state.pageKey,
+              opaque: false,
+              barrierDismissible: true,
+              barrierColor: Colors.black.withValues(alpha: 0.2),
+              child: const CreateReportScreen(),
+              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                return BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 4 * animation.value, sigmaY: 4 * animation.value),
+                  child: FadeTransition(
+                    opacity: animation,
+                    child: child,
+                  ),
+                );
+              },
+            );
+          }
+          return const MaterialPage(
+            child: CreateReportScreen(),
+          );
+        },
       ),
       GoRoute(
         path: '/report/review',
@@ -245,6 +283,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/audit-logs',
         builder: (context, state) => const AdminAuditLogScreen(),
+      ),
+      GoRoute(
+        path: '/admin/users',
+        builder: (context, state) => const AdminUserManagementScreen(),
+      ),
+
+      // ─── Principal (Kepsek) routes ─────────────────────────────────────────
+      GoRoute(
+        path: '/principal/recap',
+        builder: (context, state) => const PrincipalRecapScreen(),
+      ),
+      GoRoute(
+        path: '/principal/monitoring',
+        builder: (context, state) => const PrincipalMonitoringScreen(),
       ),
     ],
   );

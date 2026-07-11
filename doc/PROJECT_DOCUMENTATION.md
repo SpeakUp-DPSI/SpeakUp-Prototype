@@ -1,680 +1,157 @@
-# PROJECT DOCUMENTATION
-# SpeakUp - Mobile Application
-## Sistem Pelaporan dan Penanganan Kasus Perundungan
+# Project Documentation
+## SpeakUp — Sistem Pelaporan dan Penanganan Kasus Perundungan
+
+**Platform:** Hybrid Mobile & Web
+**Backend:** Laravel REST API (Sanctum + Spatie Permission) + Firebase Cloud Messaging
+**Program Studi:** Sistem Informasi — Universitas Ahmad Dahlan Yogyakarta
+**Mata Kuliah:** Desain dan Pengembangan Sistem Informasi
+**Status Dokumen:** Living document — diperbarui seiring progres desain & development
 
 ---
 
-# 1. Project Overview
+## 1. Ringkasan Proyek
 
-## Deskripsi
+SpeakUp adalah aplikasi hybrid (mobile + web) untuk pelaporan dan penanganan kasus perundungan di lingkungan sekolah. Aplikasi menghubungkan lima peran pengguna dalam satu alur penanganan kasus end-to-end: siswa melapor → guru BK memvalidasi & menindaklanjuti → kepala sekolah memantau → orang tua terlibat dalam mediasi → admin mengelola akun dan akses.
 
-SpeakUp merupakan aplikasi mobile yang dirancang untuk membantu proses pelaporan, validasi, penanganan, monitoring, dan dokumentasi kasus perundungan (bullying) di lingkungan sekolah.
-
-Aplikasi dikembangkan berdasarkan hasil observasi dan wawancara di SMK Muhammadiyah 4 Yogyakarta yang menunjukkan bahwa proses pelaporan masih dilakukan secara manual sehingga menyebabkan keterlambatan penanganan, kurangnya dokumentasi, dan rendahnya keberanian siswa untuk melapor.
+**Prinsip utama:** privasi (opsi anonim), transparansi status laporan, dan proses penanganan yang terstruktur (validasi → mediasi → tindak lanjut → selesai).
 
 ---
 
-# 2. Tujuan Sistem
+## 2. Struktur Dokumentasi
 
-Sistem dikembangkan untuk:
+Proyek ini didokumentasikan dalam tiga dokumen inti + satu folder aset:
 
-- menyediakan pelaporan anonim
-- mempermudah unggah bukti
-- membantu Guru BK melakukan validasi
-- mengelola proses mediasi
-- mencatat tindak lanjut
-- memberikan notifikasi kepada wali
-- menyediakan dashboard monitoring
-- menghasilkan rekapitulasi otomatis
+| Dokumen | Isi |
+|---|---|
+| [`SRS.md`](./SRS.md) | Software Requirements Specification — kebutuhan fungsional (FR) per modul, kebutuhan non-fungsional, endpoint API, daftar endpoint yang masih perlu ditambahkan ke backend |
+| [`Information_Architecture.md`](./Information_Architecture.md) | Sitemap lengkap per role, user flow, data model, hak akses (RBAC) |
+| [`Design_System.md`](./Design_System.md) | Design tokens (warna, tipografi, spacing, komponen), berdasarkan UI yang sudah dibuat di Figma |
+| `speakup-assets/` | Folder aset ilustrasi/icon/image, terorganisir per role sesuai sitemap |
 
----
-
-# 3. Stakeholder
-
-| Role | Deskripsi |
-|-------|-----------|
-| Siswa | Membuat laporan dan melihat status |
-| Guru BK | Mengelola seluruh proses penanganan |
-| Kepala Sekolah | Monitoring dan evaluasi |
-| Orang Tua/Wali | Menerima informasi dan konfirmasi mediasi |
-| Admin | Mengelola pengguna dan hak akses |
+**Cara pakai:** SRS menjawab "apa yang harus dibangun & endpoint apa yang dipanggil", Information Architecture menjawab "bagaimana alur & struktur navigasinya", Design System menjawab "seperti apa tampilannya secara konsisten".
 
 ---
 
-# 4. Fitur Utama
-
-## Authentication
-
-- Login
-- Logout
-- Forgot Password
-- Role Based Access
-- Session Management
-
----
-
-## Dashboard
-
-### Siswa
-
-- Ringkasan laporan
-- Status laporan
-- Edukasi
-- Riwayat laporan
-
-### Guru BK
-
-- Dashboard kasus
-- Manajemen laporan
-- Validasi
-- Mediasi
-- Tindak lanjut
-- Rekapitulasi
-
-### Kepala Sekolah
-
-- Statistik
-- Monitoring
-- Grafik
-- Rekapitulasi
-
-### Orang Tua
-
-- Informasi anak
-- Jadwal mediasi
-- Notifikasi
-- Hasil tindak lanjut
-
----
-
-# 5. Functional Requirements
-
-## Siswa
-
-- Membuat laporan
-- Pelaporan anonim
-- Upload bukti
-- Melihat status
-- Edit profil
-
-## Guru BK
-
-- Validasi laporan
-- Mengubah status
-- Mengelola mediasi
-- Membuat tindak lanjut
-- Melihat riwayat perilaku
-- Rekapitulasi
-
-## Kepala Sekolah
-
-- Monitoring kasus
-- Statistik
-- Rekapitulasi
-
-## Orang Tua
-
-- Melihat informasi anak
-- Konfirmasi jadwal
-- Melihat hasil mediasi
-
-## Admin
-
-- CRUD User
-- Role Management
-- Permission Management
-
----
-
-# 6. Non Functional Requirements
-
-- Flutter
-- Android
-- iOS
-- Responsive
-- Material 3
-- Clean Architecture
-- REST API
-- HTTPS
-- Firebase Notification
-- Secure Storage
-- Fast Loading
-- Pagination
-- Offline Cache
-
----
-
-# 7. Information Architecture
-
-Splash
-
-↓
-
-Onboarding
-
-↓
-
-Login
-
-↓
-
-Dashboard
-
-↓
-
-Report
-
-↓
-
-Validation
-
-↓
-
-Mediation
-
-↓
-
-Follow Up
-
-↓
-
-Completed
-
----
-
-# 8. User Flow
-
-## Siswa
-
-Login
-
-↓
-
-Dashboard
-
-↓
-
-Buat Laporan
-
-↓
-
-Upload Bukti
-
-↓
-
-Submit
-
-↓
-
-Lihat Status
-
----
-
-## Guru BK
-
-Login
-
-↓
-
-Dashboard
-
-↓
-
-Laporan Masuk
-
-↓
-
-Validasi
-
-↓
-
-Update Status
-
-↓
-
-Mediasi
-
-↓
-
-Tindak Lanjut
-
-↓
-
-Selesai
-
----
-
-## Kepala Sekolah
-
-Login
-
-↓
-
-Dashboard
-
-↓
-
-Monitoring
-
-↓
-
-Statistik
-
-↓
-
-Rekapitulasi
-
----
-
-## Orang Tua
-
-Login
-
-↓
-
-Notifikasi
-
-↓
-
-Informasi Anak
-
-↓
-
-Konfirmasi Jadwal
-
-↓
-
-Hasil Mediasi
-
----
-
-# 9. Class Diagram Summary
-
-## User
-
-- Siswa
-- Guru BK
-- Kepala Sekolah
-- Orang Tua
-
-Semua merupakan turunan dari class Pengguna.
-
-Entity utama
-
-- Laporan
-- Bukti
-- Validasi
-- Mediasi
-- Tindak Lanjut
-- Notifikasi
-- Rekapitulasi
-- Riwayat Perilaku
-
----
-
-# 10. Database Entity
-
-User
-
-Student
-
-Teacher
-
-Parent
-
-Report
-
-Evidence
-
-Validation
-
-Mediation
-
-FollowUp
-
-Notification
-
-BehaviorHistory
-
-Recapitulation
-
-Role
-
-Permission
-
----
-
-# 11. Role Permission
-
-| Menu | Siswa | Guru BK | Kepala | Wali | Admin |
-|------|------|---------|---------|------|-------|
-| Dashboard | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Laporan | ✓ | ✓ | ✓ | ✕ | ✓ |
-| Validasi | ✕ | ✓ | ✕ | ✕ | ✓ |
-| Mediasi | ✕ | ✓ | ✕ | ✓ | ✓ |
-| Rekap | ✕ | ✓ | ✓ | ✕ | ✓ |
-| User Management | ✕ | ✕ | ✕ | ✕ | ✓ |
-
----
-
-# 12. Status Laporan
-
-Draft
-
-↓
-
-Dikirim
-
-↓
-
-Menunggu Validasi
-
-↓
-
-Valid
-
-↓
-
-Diproses
-
-↓
-
-Mediasi
-
-↓
-
-Tindak Lanjut
-
-↓
-
-Selesai
-
-atau
-
-↓
-
-Ditolak
-
----
-
-# 13. Notification Flow
-
-Laporan dibuat
-
-↓
-
-Guru BK menerima notifikasi
-
-↓
-
-Validasi selesai
-
-↓
-
-Siswa menerima status
-
-↓
-
-Orang tua menerima informasi
-
-↓
-
-Kepala sekolah menerima statistik
-
----
-
-# 14. Frontend Architecture
-
-Framework
-
-Flutter
-
-State Management
-
-Riverpod
-
-Architecture
-
-Clean Architecture
-
-Navigation
-
-Go Router
-
-Networking
-
-Dio
-
-Storage
-
-Secure Storage
-
-Notification
-
-Firebase Cloud Messaging
-
-Pattern
-
-Repository Pattern
-
-Dependency Injection
-
-SOLID
-
-Feature First
-
----
-
-# 15. Backend Architecture
-
-Framework
-
-Laravel 12
+## 3. Tech Stack
+
+```
+Frontend (Hybrid)
+├── Mobile App   — Flutter (implementasi Modul 6, dsb.)
+└── Web App      — React/Vue (responsif, role Kepsek & Admin diutamakan)
+
+Backend
+├── Framework    — Laravel REST API
+├── Auth         — Laravel Sanctum (token-based)
+├── RBAC         — Spatie Permission
+└── Push Notif   — Firebase Cloud Messaging (FCM)
 
 Database
-
-MySQL
-
-Authentication
-
-Laravel Sanctum
-
-Storage
-
-Laravel Storage
-
-Queue
-
-Laravel Queue
-
-Notification
-
-Laravel Notification
-
-Authorization
-
-Spatie Permission
+└── MySQL — users, reports, evidences, validations, mediations,
+            follow_ups, notifications, audit_logs
+```
 
 ---
 
-# 16. API Module
+## 4. Peran Pengguna (Role)
 
-Authentication
+| Role (Backend) | Platform Utama | Peran |
+|---|---|---|
+| `siswa` | Mobile & Web | Pelapor — buat laporan, pantau status, opsi anonim |
+| `guru_bk` | Mobile & Web | Pengelola — validasi, mediasi, tindak lanjut |
+| `kepsek` | Web (utama), Mobile read-only | Pemantau — statistik, tren, kebijakan |
+| `ortu` | Mobile & Web | Pendamping — notifikasi, konfirmasi kehadiran mediasi |
+| `admin` | Web only | Pengelola sistem — akun, hak akses, audit log |
 
-User
-
-Report
-
-Evidence
-
-Validation
-
-Mediation
-
-Follow Up
-
-Notification
-
-Recapitulation
-
-Statistics
-
-Profile
-
-Settings
+Detail hak akses lengkap ada di `Information_Architecture.md` §8.
 
 ---
 
-# 17. Design System
+## 5. Status Desain UI (Figma)
 
-Material 3
+Status per 1 Juli 2026, berdasarkan ekspor `UI_Design.zip`. Tabel ini mengikuti sitemap di `Information_Architecture.md` §3 — update manual setiap kali ada screen baru yang selesai didesain.
 
-Typography
+### 5.1 Auth — ✅ Selesai (6/6 screen)
 
-Color Token
+| Screen | Status |
+|---|---|
+| Login | ✅ |
+| Daftar (Signup) | ✅ |
+| Verifikasi Akun (pilih metode) | ✅ |
+| Verifikasi — Kode Salah | ✅ |
+| Verifikasi Berhasil | ✅ |
+| Pendaftaran Berhasil | ✅ |
 
-Spacing
+### 5.2 Siswa — 🟡 Sebagian (5/8 screen)
 
-Elevation
+| Screen | Status |
+|---|---|
+| Beranda | ✅ |
+| Buat Laporan — Step 1 (Identitas & Data Kejadian) | ✅ |
+| Buat Laporan — Step 2 (Bukti) | ✅ |
+| Buat Laporan — Step 3 (Review & Kirim) | ✅ |
+| Riwayat Laporan (list) | ✅ |
+| Detail Laporan (timeline status) | ⬜ belum |
+| Notifikasi | ⬜ belum |
+| Profil | ⬜ belum |
 
-Radius
+### 5.3 Guru BK — 🟡 Sebagian (2/~10 screen)
 
-Button
+| Screen | Status |
+|---|---|
+| Beranda / Dashboard | ✅ |
+| Daftar Laporan (Manajemen Laporan) | ✅ |
+| Detail Laporan + Validasi | ⬜ belum |
+| Mediasi (list & buat jadwal & detail) | ⬜ belum |
+| Tindak Lanjut | ⬜ belum |
+| Riwayat Perilaku Siswa | ⬜ belum |
+| Rekapitulasi & Export | ⬜ belum |
+| Notifikasi | ⬜ belum |
+| Profil & Pengaturan | ⬜ belum |
 
-Input
+### 5.4 Kepala Sekolah — 🔴 Baru mulai (1/~5 screen)
 
-Card
+| Screen | Status |
+|---|---|
+| Beranda / Dashboard | ✅ |
+| Rekapitulasi Kasus (tabel + export) | ⬜ belum |
+| Monitoring Penanganan | ⬜ belum |
+| Laporan Kebijakan | ⬜ belum |
+| Notifikasi & Profil | ⬜ belum |
 
-Dialog
+### 5.5 Orang Tua/Wali — 🔴 Belum mulai (0 screen)
 
-Bottom Sheet
+Seluruh screen (Beranda, Informasi Anak, Jadwal Mediasi, Konfirmasi Kehadiran, Hasil Tindak Lanjut) belum didesain.
 
-Snackbar
+### 5.6 Admin — 🔴 Belum mulai (0 screen)
 
-Status Color
-
-Accessibility
-
-Dark Mode Ready
-
----
-
-# 18. Security
-
-HTTPS
-
-Authentication
-
-Authorization
-
-RBAC
-
-Secure Storage
-
-Password Hash
-
-Input Validation
-
-Rate Limiter
-
-Audit Log
-
-Session Timeout
-
----
-
-# 19. Development Roadmap
-
-Phase 1
-
-Authentication
-
-Phase 2
-
-Dashboard
-
-Phase 3
-
-Report
-
-Phase 4
-
-Validation
-
-Phase 5
-
-Mediation
-
-Phase 6
-
-Notification
-
-Phase 7
-
-Statistics
-
-Phase 8
-
-Testing
-
-Phase 9
-
-Deployment
+Seluruh screen (Manajemen Pengguna, Assign Role, Audit Log) belum didesain — platform web only.
 
 ---
 
-# 20. Tech Stack
+## 6. Temuan Desain Penting
 
-## Mobile
+Catatan dari review langsung terhadap Figma export (menggantikan asumsi versi lama `Design_System.md`):
 
-Flutter
+- **Tema aktual adalah light theme dengan aksen biru** (bukan dark mode teal seperti draft awal). Warna primary terverifikasi dari sampling pixel: `#3069CD`.
+- Ilustrasi karakter (siswa, guru, kepsek) dipakai konsisten di header/hero card tiap role — lihat `speakup-assets/illustrations/`.
+- Status badge memakai warna semantik berbeda per konteks (contoh: "Diproses" biru di Siswa, oranye di beberapa konteks Guru BK/Kepsek) — perlu standardisasi satu mapping status→warna di `Design_System.md` supaya konsisten lintas role.
+- Kepsek memakai header dark-navy gradient (beda dari Siswa/Guru BK yang light card) — kemungkinan pattern "role accent" yang perlu didefinisikan sebagai token terpisah.
 
-Dart
-
-Riverpod
-
-Go Router
-
-Dio
-
-Material 3
-
-Firebase Messaging
-
-Secure Storage
-
-## Backend
-
-Laravel 12
-
-PHP 8
-
-MySQL
-
-Sanctum
-
-Spatie Permission
-
-REST API
-
-## Deployment
-
-Docker
-
-Nginx
-
-GitHub
-
-Firebase
-
-Google Play Store
-
-Apple App Store
+*(Analisis warna & komponen lengkap sedang dituangkan ke `Design_System.md`.)*
 
 ---
 
-# 21. Kesimpulan
+## 7. Rencana Selanjutnya (Next Steps)
 
-SpeakUp merupakan aplikasi mobile berbasis Flutter yang dibangun menggunakan Clean Architecture dan REST API Laravel untuk mendukung proses pelaporan serta penanganan kasus perundungan secara digital.
+- [ ] Selesaikan update `Design_System.md` mengikuti UI aktual (warna, tipografi, komponen)
+- [ ] Desain screen Kepsek yang tersisa: Rekapitulasi, Monitoring, Laporan Kebijakan
+- [ ] Desain lengkap Guru BK: Detail Laporan, Mediasi, Tindak Lanjut, Rekapitulasi
+- [ ] Mulai desain Orang Tua/Wali dan Admin
+- [ ] Tambahkan endpoint backend yang masih ditandai *"Perlu Ditambah"* di `SRS.md` §6
+- [ ] Isi `speakup-assets/` dengan ilustrasi final per role
 
-Dokumen ini menjadi acuan utama pengembangan frontend, backend, database, API, UI/UX, serta deployment sehingga seluruh tim pengembang memiliki referensi yang sama selama proses implementasi.
+---
+
+## 8. Informasi Akademik
+
+*Dokumen ini disusun sebagai bagian dari tugas mata kuliah Desain dan Pengembangan Sistem Informasi, Program Studi Sistem Informasi, Fakultas Sains dan Teknologi Terapan, Universitas Ahmad Dahlan Yogyakarta, Tahun Ajaran 2025/2026.*

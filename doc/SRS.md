@@ -1,9 +1,11 @@
 # Software Requirements Specification (SRS)
 ## SpeakUp — Sistem Pelaporan dan Penanganan Kasus Perundungan
-**Versi:** 1.0  
-**Tanggal:** Juni 2025  
-**Program Studi:** Sistem Informasi — Universitas Ahmad Dahlan Yogyakarta  
-**Mata Kuliah:** Desain dan Pengembangan Sistem Informasi  
+**Versi:** 2.0 (Revised)
+**Tanggal:** Juli 2026
+**Platform:** Hybrid Mobile & Web
+**Backend:** Laravel (REST API) + Firebase Push Notification
+**Program Studi:** Sistem Informasi — Universitas Ahmad Dahlan Yogyakarta
+**Mata Kuliah:** Desain dan Pengembangan Sistem Informasi
 **Dosen Pengampu:** Farid Suryanto, S.Pd., MT.
 
 ---
@@ -11,17 +13,42 @@
 ## 1. Pendahuluan
 
 ### 1.1 Tujuan Dokumen
-Dokumen SRS ini mendefinisikan seluruh kebutuhan fungsional dan non-fungsional dari aplikasi **SpeakUp**. Dokumen ini menjadi acuan bagi tim pengembang dalam merancang, membangun, dan menguji sistem.
+Dokumen SRS ini mendefinisikan seluruh kebutuhan fungsional dan non-fungsional dari aplikasi **SpeakUp** versi hybrid (mobile + web). Dokumen ini diselaraskan dengan struktur API Laravel backend yang telah ada dan desain UI mobile-first yang telah dirancang.
 
 ### 1.2 Ruang Lingkup Sistem
-**SpeakUp** adalah aplikasi berbasis web/mobile yang memfasilitasi:
+SpeakUp adalah aplikasi **hybrid (mobile & web)** dengan backend Laravel REST API yang memfasilitasi:
 - Pelaporan kasus perundungan oleh siswa (termasuk opsi anonim)
 - Validasi dan penanganan laporan oleh Guru BK
 - Monitoring statistik kasus oleh Kepala Sekolah
 - Keterlibatan Orang Tua/Wali dalam proses mediasi
+- Notifikasi real-time via Firebase Cloud Messaging (FCM)
 - Pengelolaan akun dan hak akses oleh Admin
 
-### 1.3 Definisi dan Singkatan
+### 1.3 Arsitektur Sistem
+
+```
+┌─────────────────────────────────────────┐
+│         FRONTEND (Hybrid)               │
+│  Mobile App (Flutter/React Native)      │
+│  Web App (React/Vue)                    │
+└────────────────┬────────────────────────┘
+                 │ HTTPS / REST API
+┌────────────────▼────────────────────────┐
+│      BACKEND (Laravel API)              │
+│  Auth: Laravel Sanctum                  │
+│  Role: Spatie Permission                │
+│  Push: Firebase Cloud Messaging         │
+└────────────────┬────────────────────────┘
+                 │
+┌────────────────▼────────────────────────┐
+│           DATABASE (MySQL)              │
+│  users, reports, evidences,             │
+│  validations, mediations, follow_ups,   │
+│  notifications, audit_logs              │
+└─────────────────────────────────────────┘
+```
+
+### 1.4 Definisi dan Singkatan
 
 | Istilah | Keterangan |
 |---|---|
@@ -29,298 +56,328 @@ Dokumen SRS ini mendefinisikan seluruh kebutuhan fungsional dan non-fungsional d
 | SpeakUp | Nama aplikasi sistem pelaporan perundungan |
 | Guru BK | Guru Bimbingan dan Konseling |
 | NIS | Nomor Induk Siswa |
-| Kode Laporan | Kode unik yang dihasilkan sistem setelah laporan dikirim |
+| Kode Laporan | Kode unik format `SPK-YYYY-NNNNN` dihasilkan sistem |
 | Anonim | Pelaporan tanpa mencantumkan identitas pelapor |
 | Mediasi | Pertemuan antara pihak yang terlibat untuk menyelesaikan kasus |
+| FCM | Firebase Cloud Messaging — layanan push notification |
+| OTP | One-Time Password — kode verifikasi akun 6 digit |
+| Sanctum | Laravel Sanctum — autentikasi berbasis token API |
 
-### 1.4 Referensi
-- Dokumen Arsitektur Informasi Sistem Pelaporan dan Penanganan Kasus Perundungan (2025/2026)
+### 1.5 Referensi
+- Desain UI SpeakUp (Figma) — mobile-first dark theme
+- Backend Laravel SpeakUp Prototype (`routes/api.php`, Controllers, Models)
+- Dokumen Arsitektur Informasi SpeakUp v1.0
 
 ---
 
 ## 2. Deskripsi Umum Sistem
 
-### 2.1 Gambaran Sistem
-SpeakUp menyediakan platform terpusat untuk melaporkan, memvalidasi, menangani, dan memantau kasus perundungan di lingkungan sekolah. Sistem terbagi menjadi enam area utama:
+### 2.1 Platform
+SpeakUp dikembangkan sebagai aplikasi **hybrid** yang dapat diakses melalui:
+- **Mobile App** — tampilan utama, mobile-first dark theme
+- **Web App** — versi responsif untuk akses melalui browser desktop/tablet
 
-1. **Halaman Publik** — akses tanpa login untuk informasi dan pelaporan
-2. **Dashboard Siswa** — manajemen laporan oleh siswa
-3. **Dashboard Guru BK** — pusat pengelolaan dan penanganan laporan
-4. **Dashboard Kepala Sekolah** — monitoring dan evaluasi
-5. **Dashboard Orang Tua/Wali** — informasi terbatas dan konfirmasi mediasi
-6. **Pengaturan** — manajemen akun dan hak akses
+Keduanya mengonsumsi backend yang sama melalui REST API Laravel.
 
 ### 2.2 Karakteristik Pengguna
 
-| Pengguna | Peran | Kebutuhan Utama |
-|---|---|---|
-| Siswa | Pelapor | Membuat laporan, memantau status, akses anonim |
-| Guru BK | Pengelola | Validasi, mediasi, tindak lanjut, rekapitulasi |
-| Kepala Sekolah | Pemantau | Statistik, tren, monitoring, kebijakan |
-| Orang Tua/Wali | Pendamping | Notifikasi, jadwal mediasi, konfirmasi kehadiran |
-| Admin | Pengelola Sistem | Manajemen akun, hak akses, keamanan |
+| Role (Backend) | Tampilan | Peran | Kebutuhan Utama |
+|---|---|---|---|
+| `siswa` | Mobile & Web | Pelapor | Membuat laporan, pantau status, akses anonim |
+| `guru_bk` | Mobile & Web | Pengelola | Validasi, mediasi, tindak lanjut, rekapitulasi |
+| `kepsek` | Web (utama) | Pemantau | Statistik, tren, monitoring, kebijakan |
+| `ortu` | Mobile & Web | Pendamping | Notifikasi, jadwal mediasi, konfirmasi kehadiran |
+| `admin` | Web | Pengelola Sistem | Manajemen akun, hak akses, audit log |
 
 ### 2.3 Asumsi dan Ketergantungan
-- Sistem membutuhkan koneksi internet aktif
-- Pengguna memiliki perangkat dengan browser modern atau smartphone
-- Sekolah menyediakan data awal siswa, guru, dan orang tua untuk pendaftaran akun
-- Server mendukung penyimpanan file (foto, video, dokumen)
+- Backend Laravel tersedia dan dapat diakses via HTTPS
+- Firebase project aktif untuk push notification (FCM)
+- Pengguna memiliki smartphone atau browser modern
+- Email aktif diperlukan untuk proses verifikasi OTP saat registrasi
+- File upload (bukti) disimpan di storage Laravel (lokal atau cloud)
 
 ---
 
 ## 3. Kebutuhan Fungsional
 
-### 3.1 Halaman Publik
+### 3.1 Autentikasi & Akun
 
-#### FR-PUB-01: Beranda
-- Sistem menampilkan deskripsi, tujuan, dan manfaat SpeakUp
-- Sistem menampilkan alur penggunaan: cara membuat laporan, mengunggah bukti, mendapatkan kode laporan, dan mengecek status
-- Sistem menyediakan tombol akses cepat: **Buat Laporan** dan **Cek Status Laporan**
-- Sistem menampilkan kontak bantuan Guru BK
+#### FR-AUTH-01: Login
+- `POST /api/login`
+- Input: `email`, `password`
+- Output: token Sanctum + data user + role
+- Error: kredensial salah → pesan "Email atau password tidak sesuai"
 
-#### FR-PUB-02: Edukasi Anti Perundungan
-- Sistem menampilkan pengertian perundungan
-- Sistem menampilkan jenis perundungan: fisik, verbal, sosial, cyberbullying
-- Sistem menampilkan dampak perundungan: psikologis, sosial, akademik
-- Sistem menampilkan panduan pelaporan, ketentuan laporan, dan informasi perlindungan identitas pelapor
+#### FR-AUTH-02: Registrasi (Perlu Ditambah ke Backend)
+- `POST /api/register`
+- Input: `name`, `email`, `password`, `password_confirmation`, `phone`, `role`
+- Sistem generate OTP 6 digit dan kirim ke email
+- Akun belum aktif sebelum verifikasi OTP
 
-#### FR-PUB-03: Buat Laporan (Publik)
-- Sistem menyediakan form data kejadian: jenis perundungan, tanggal, waktu, lokasi, pihak terlibat, kronologi
-- Sistem menyediakan pilihan identitas pelapor: dengan identitas atau anonim
-- Jika memilih anonim, sistem tidak menyimpan data identitas pelapor
-- Jika memilih dengan identitas, sistem meminta nama, kelas, dan kontak
-- Sistem menyediakan fitur upload bukti: foto, video, dokumen, beserta keterangan bukti
-- Sistem menampilkan review laporan sebelum pengiriman
-- Sistem memvalidasi kelengkapan data sebelum laporan dikirim
-- Sistem menampilkan konfirmasi pengiriman beserta kode laporan unik
-- Sistem menyimpan instruksi cara mengecek status laporan
+#### FR-AUTH-03: Verifikasi OTP (Perlu Ditambah ke Backend)
+- `POST /api/verify-otp`
+- Input: `email`, `otp`
+- Jika benar → akun diaktifkan, tampilkan halaman "Pendaftaran Berhasil"
+- Jika salah → tampilkan error "Kode Verifikasi Salah" (sesuai UI)
+- OTP dapat di-resend via `POST /api/resend-otp`
 
-#### FR-PUB-04: Cek Status Laporan (Publik)
-- Sistem menyediakan form input kode laporan
-- Sistem memvalidasi kode laporan
-- Sistem menampilkan: status laporan, tanggal laporan, tahap penanganan, catatan umum Guru BK, dan riwayat perubahan status
+#### FR-AUTH-04: Logout
+- `POST /api/logout` (auth:sanctum)
+- Hapus token Sanctum saat ini
 
----
-
-### 3.2 Dashboard Siswa
-
-#### FR-STD-01: Dashboard Utama Siswa
-- Sistem menampilkan ringkasan laporan: jumlah laporan dibuat, laporan sedang diproses, laporan selesai
-
-#### FR-STD-02: Buat Laporan Baru
-- Sistem mengarahkan siswa ke form laporan (sama dengan FR-PUB-03)
-- Sistem mengaitkan laporan dengan akun siswa yang login
-
-#### FR-STD-03: Riwayat Laporan
-- Sistem menampilkan daftar seluruh laporan yang pernah dibuat siswa
-- Setiap entri menampilkan: kode laporan, tanggal laporan, status laporan
-
-#### FR-STD-04: Detail Status Laporan
-- Sistem menampilkan informasi laporan, status penanganan, catatan perkembangan, dan riwayat perubahan status
-
-#### FR-STD-05: Bantuan
-- Sistem menampilkan panduan penggunaan SpeakUp
-- Sistem menampilkan pertanyaan umum (FAQ)
-- Sistem menampilkan kontak Guru BK
+#### FR-AUTH-05: Profil Pengguna
+- `GET /api/profile` — lihat profil + role
+- `PUT /api/profile` — update `name`, `phone`, `avatar`
+- `PUT /api/profile/password` — ubah password (validasi `current_password`)
+- `POST /api/profile/fcm-token` — simpan FCM token untuk push notification
 
 ---
 
-### 3.3 Dashboard Guru BK
+### 3.2 Laporan (Reports)
 
-#### FR-BK-01: Dashboard Utama
-- Sistem menampilkan ringkasan jumlah laporan berdasarkan status: total masuk, menunggu validasi, valid, diproses, mediasi, selesai
+#### FR-RPT-01: Buat Laporan
+- `POST /api/reports` (auth:sanctum, role: semua)
+- Input:
+  - `title` (required) — judul singkat laporan
+  - `description` (required) — kronologi kejadian
+  - `category` — jenis perundungan: `fisik`, `verbal`, `sosial`, `cyberbullying`
+  - `incident_location` — lokasi kejadian
+  - `incident_date` — tanggal kejadian
+  - `is_anonymous` (boolean) — jika `true`, identitas pelapor disembunyikan
+  - `participants[]` — array korban/terlapor/saksi dengan field: `role` (korban/terlapor/saksi), `name`, `class_name`, `notes`
+  - `evidences[]` — file bukti (foto/video/dokumen)
+- Output: data laporan + `report_code` (format `SPK-YYYY-NNNNN`)
+- Status awal: `submitted`
 
-#### FR-BK-02: Manajemen Laporan
-- Sistem menampilkan daftar laporan masuk dengan kolom: kode laporan, tanggal, jenis perundungan, status, aksi
-- Sistem menampilkan detail laporan: data kejadian, kronologi, identitas pelapor, data korban, data terlapor, data saksi
-- Guru BK dapat melakukan validasi laporan: memeriksa kelengkapan data, kronologi, menentukan valid/tidak valid beserta catatan validasi
-- Guru BK dapat memeriksa bukti: daftar bukti, preview, keterangan, catatan pemeriksaan
-- Guru BK dapat memperbarui status laporan ke: Baru, Menunggu Validasi, Valid, Diproses, Mediasi, Tindak Lanjut, Selesai, Ditolak
+#### FR-RPT-02: Daftar Laporan
+- `GET /api/reports` (auth:sanctum)
+- Role `siswa` → hanya laporan milik sendiri
+- Role `guru_bk`, `kepsek`, `admin` → semua laporan
+- Role `ortu` → laporan anak-anak yang terhubung (`parent_child`)
+- Filter tersedia: `status`, `category`, `date_from`, `date_to`
+- Pagination dengan `limit` dan `page`
 
-#### FR-BK-03: Mediasi
-- Guru BK dapat membuat jadwal mediasi: tanggal, waktu, tempat, agenda
-- Sistem menampilkan daftar jadwal mediasi: mendatang, berlangsung, selesai
-- Guru BK dapat menentukan peserta mediasi: Guru BK, korban, terlapor, orang tua/wali, pihak sekolah
-- Guru BK dapat mencatat hasil mediasi: catatan, kesepakatan, rekomendasi lanjutan, status hasil
+#### FR-RPT-03: Detail Laporan
+- `GET /api/reports/{id}` (auth:sanctum)
+- Load relasi: `participants`, `statusHistories`, `validations.validator`, `mediations.mediator`, `followUps.executor`, `evidences`
+- Role `siswa` → hanya bisa akses laporan sendiri (403 jika bukan miliknya)
 
-#### FR-BK-04: Tindak Lanjut
-- Guru BK dapat mencatat pembinaan, rekomendasi tindakan, sanksi, pemantauan perkembangan siswa, dan penyelesaian kasus
+#### FR-RPT-04: Update Status Laporan
+- `PUT /api/reports/{id}/status` (auth:sanctum, role: `guru_bk`, `admin`)
+- Input: `status`, `notes`
+- Status valid: `draft` → `submitted` → `waiting_validation` → `valid` / `rejected` → `processing` → `mediation` → `follow_up` → `completed`
+- Setiap update otomatis membuat entri `report_status_histories`
 
-#### FR-BK-05: Riwayat Perilaku Siswa
-- Sistem menampilkan data siswa: nama, NIS, kelas, kontak orang tua/wali
-- Sistem menampilkan riwayat kasus siswa: sebagai korban, terlapor, atau saksi
-- Guru BK dapat mencatat: catatan konseling, catatan pembinaan, catatan perkembangan
-
-#### FR-BK-06: Laporan / Rekapitulasi
-- Sistem menyediakan rekap harian, mingguan, bulanan
-- Sistem menampilkan grafik kasus: berdasarkan jenis perundungan, status laporan, dan periode waktu
-- Sistem menyediakan fitur export laporan: PDF, Excel, cetak
-
----
-
-### 3.4 Dashboard Kepala Sekolah
-
-#### FR-KS-01: Statistik Kasus
-- Sistem menampilkan: total kasus, jumlah kasus baru, diproses, selesai, ditolak
-
-#### FR-KS-02: Grafik Tren Perundungan
-- Sistem menampilkan tren kasus harian dan bulanan
-- Sistem menampilkan tren jenis perundungan dan tren penyelesaian kasus
-
-#### FR-KS-03: Rekapitulasi Kasus
-- Sistem menampilkan rekap berdasarkan: jenis perundungan, kelas, status, dan periode
-
-#### FR-KS-04: Monitoring Penanganan
-- Sistem menampilkan daftar kasus aktif, progres penanganan, kasus yang membutuhkan perhatian, evaluasi tindak lanjut
-
-#### FR-KS-05: Laporan Kebijakan
-- Sistem menampilkan ringkasan kasus, analisis permasalahan, rekomendasi pencegahan, dan laporan untuk pengambilan keputusan
+#### FR-RPT-05: Cek Status via Kode Laporan (Publik)
+- `GET /api/reports/check?code={report_code}` **(Perlu Ditambah ke Backend)**
+- Tanpa auth — gunakan `report_code`
+- Output terbatas: status, tahap penanganan, catatan umum, riwayat status (tanpa identitas pihak)
 
 ---
 
-### 3.5 Dashboard Orang Tua/Wali
+### 3.3 Validasi Laporan
 
-#### FR-OT-01: Notifikasi
-- Sistem mengirimkan notifikasi ketika: anak terlibat kasus, ada jadwal mediasi, perubahan status, hasil tindak lanjut
+#### FR-VAL-01: Buat Validasi
+- `POST /api/reports/{report}/validations` (role: `guru_bk`, `admin`)
+- Input: `status` (`valid` / `rejected`), `notes`
+- Jika `valid` → status laporan otomatis jadi `processing`
+- Jika `rejected` → status laporan otomatis jadi `rejected`
+- Otomatis buat notifikasi ke pelapor + FCM push notification
 
-#### FR-OT-02: Detail Informasi Anak
-- Sistem menampilkan data anak, status keterlibatan, ringkasan kasus, catatan terbatas dari Guru BK
-
-#### FR-OT-03: Jadwal Mediasi
-- Sistem menampilkan tanggal, waktu, tempat, agenda, dan peserta mediasi
-
-#### FR-OT-04: Konfirmasi Kehadiran
-- Orang tua/wali dapat memilih: hadir, tidak hadir, atau ajukan perubahan jadwal
-
-#### FR-OT-05: Hasil Tindak Lanjut
-- Sistem menampilkan ringkasan hasil mediasi, rekomendasi Guru BK, catatan pembinaan, status penyelesaian kasus
+#### FR-VAL-02: Daftar Validasi
+- `GET /api/reports/{report}/validations`
+- Menampilkan riwayat validasi beserta data validator
 
 ---
 
-### 3.6 Pengaturan
+### 3.4 Mediasi
 
-#### FR-SET-01: Profil Pengguna
-- Pengguna dapat melihat dan mengubah data akun dan data pribadi
+#### FR-MED-01: Buat Jadwal Mediasi
+- `POST /api/reports/{report}/mediations` (role: `guru_bk`, `admin`)
+- Input: `schedule_date`, `location`
+- Otomatis update status laporan ke `mediation`
+- Otomatis buat notifikasi + FCM push ke pelapor
 
-#### FR-SET-02: Hak Akses (Admin)
-- Admin dapat mengatur role: siswa, Guru BK, kepala sekolah, orang tua/wali
+#### FR-MED-02: Daftar Mediasi per Laporan
+- `GET /api/reports/{report}/mediations` **(Perlu Ditambah ke Backend)**
 
-#### FR-SET-03: Keamanan Akun
-- Pengguna dapat mengubah password
-- Sistem menyediakan verifikasi akun
-- Pengguna dapat mengatur pengaturan privasi
+#### FR-MED-03: Detail Mediasi
+- `GET /api/mediations/{id}` **(Perlu Ditambah ke Backend)**
+- Load: `mediator`, `participants`, `report`
 
-#### FR-SET-04: Logout
-- Sistem menyediakan fungsi logout yang mengakhiri sesi pengguna
+#### FR-MED-04: Update Status Mediasi
+- `PUT /api/mediations/{id}/status` **(Perlu Ditambah ke Backend)**
+- Input: `status` (`scheduled`, `ongoing`, `completed`, `cancelled`), `result`
+- Jika `completed` → status laporan otomatis ke `follow_up`
 
----
-
-## 4. Kebutuhan Non-Fungsional
-
-### 4.1 Keamanan (Security)
-- Sistem menggunakan autentikasi berbasis sesi atau JWT
-- Data laporan dienkripsi saat penyimpanan dan transmisi (HTTPS)
-- Akses data dibatasi berdasarkan role pengguna
-- Laporan anonim tidak menyimpan data identitas pelapor di database
-- Sistem mencatat log aktivitas untuk keperluan audit
-
-### 4.2 Performa (Performance)
-- Halaman utama dimuat dalam waktu ≤ 3 detik pada koneksi normal
-- Upload bukti mendukung file hingga 10 MB per file
-- Sistem mampu menangani minimal 100 pengguna konkuren
-
-### 4.3 Ketersediaan (Availability)
-- Sistem tersedia 99% uptime selama jam sekolah (07.00–17.00)
-- Sistem menyediakan pesan error yang informatif saat terjadi gangguan
-
-### 4.4 Skalabilitas (Scalability)
-- Arsitektur mendukung penambahan fitur: notifikasi WhatsApp/email, integrasi data siswa, export otomatis, grafik analitik lanjutan, pencarian dan filter kasus, role permission yang lebih detail
-
-### 4.5 Usability
-- Antarmuka menggunakan bahasa Indonesia
-- Navigasi menu jelas dan sesuai peran pengguna
-- Formulir dilengkapi validasi dan pesan error yang mudah dipahami
-- Sistem responsif untuk perangkat desktop dan mobile
-
-### 4.6 Privasi
-- Identitas pelapor anonim tidak dapat diakses oleh siapapun termasuk Admin
-- Data siswa hanya dapat dilihat oleh pihak yang berwenang sesuai hak akses
-- Dashboard orang tua/wali hanya menampilkan informasi yang relevan dengan anak mereka
+#### FR-MED-05: Konfirmasi Kehadiran (Orang Tua/Wali)
+- `PUT /api/mediations/{id}/participants/{userId}/confirm` **(Perlu Ditambah ke Backend)**
+- Input: `status` (`hadir`, `tidak_hadir`, `minta_ubah`)
 
 ---
 
-## 5. Hak Akses Pengguna
+### 3.5 Tindak Lanjut (Follow-Up)
 
-| Fitur | Siswa | Guru BK | Kepala Sekolah | Orang Tua/Wali | Admin |
-|---|---|---|---|---|---|
-| Melihat Halaman Publik | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Membaca Edukasi | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Membuat Laporan | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Melapor Anonim | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Upload Bukti | ✅ | ✅ | ❌ | ❌ | ❌ |
-| Mendapatkan Kode Laporan | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Cek Status Laporan | ✅ | ✅ | ✅ | Terbatas | ✅ |
-| Melihat Dashboard Siswa | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Melihat Laporan Masuk | ❌ | ✅ | Terbatas | ❌ | ✅ |
-| Melihat Detail Laporan | Terbatas | ✅ | Terbatas | Terbatas | ✅ |
-| Validasi Laporan | ❌ | ✅ | ❌ | ❌ | ❌ |
-| Pemeriksaan Bukti | ❌ | ✅ | ❌ | ❌ | ❌ |
-| Update Status Laporan | ❌ | ✅ | ❌ | ❌ | ❌ |
-| Membuat Jadwal Mediasi | ❌ | ✅ | ❌ | ❌ | ❌ |
-| Melihat Jadwal Mediasi | Terbatas | ✅ | ✅ | ✅ | ✅ |
-| Konfirmasi Kehadiran Mediasi | ❌ | ❌ | ❌ | ✅ | ❌ |
-| Mencatat Tindak Lanjut | ❌ | ✅ | ❌ | ❌ | ❌ |
-| Melihat Hasil Tindak Lanjut | Terbatas | ✅ | ✅ | Terbatas | ✅ |
-| Melihat Riwayat Perilaku Siswa | ❌ | ✅ | Terbatas | ❌ | ✅ |
-| Melihat Statistik Kasus | ❌ | ✅ | ✅ | ❌ | ✅ |
-| Melihat Laporan Kebijakan | ❌ | ❌ | ✅ | ❌ | ✅ |
-| Export Laporan | ❌ | ✅ | ✅ | ❌ | ✅ |
-| Mengelola Hak Akses | ❌ | ❌ | ❌ | ❌ | ✅ |
-| Mengubah Profil Pengguna | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Logout | ✅ | ✅ | ✅ | ✅ | ✅ |
+#### FR-FUP-01: Catat Tindak Lanjut
+- `POST /api/reports/{report}/follow-ups` (role: `guru_bk`, `admin`)
+- Input: `action_taken`, `notes`
+- Otomatis buat notifikasi + FCM push ke pelapor
+
+#### FR-FUP-02: Daftar Tindak Lanjut
+- `GET /api/reports/{report}/follow-ups` **(Perlu Ditambah ke Backend)**
 
 ---
 
-## 6. Alur Status Laporan
+### 3.6 Notifikasi
+
+#### FR-NOT-01: Daftar Notifikasi
+- `GET /api/notifications` — list notifikasi pengguna, paginate
+
+#### FR-NOT-02: Jumlah Belum Dibaca
+- `GET /api/notifications/unread-count` → `{ count: N }`
+
+#### FR-NOT-03: Tandai Dibaca
+- `PUT /api/notifications/{id}/read` — satu notifikasi
+- `PUT /api/notifications/read-all` — semua notifikasi
+
+#### FR-NOT-04: Push Notification (FCM)
+- Sistem kirim FCM push saat: laporan divalidasi, mediasi dijadwalkan, tindak lanjut dicatat
+- FCM token disimpan via `POST /api/profile/fcm-token`
+
+---
+
+### 3.7 Dashboard & Statistik
+
+#### FR-DSH-01: Statistik Dashboard
+- `GET /api/dashboard/statistics` (auth:sanctum)
+- Response berbeda per role:
+  - `siswa` → statistik laporan sendiri
+  - `ortu` → statistik laporan anak-anak
+  - `guru_bk`, `kepsek`, `admin` → statistik semua laporan
+- Berisi: total, hari ini, bulan ini, per-status, per-kategori, laporan terbaru, notifikasi belum dibaca
+
+#### FR-DSH-02: Statistik Tren (Perlu Ditambah ke Backend)
+- `GET /api/dashboard/trend?period=daily|monthly` (role: `guru_bk`, `kepsek`, `admin`)
+- Untuk grafik tren pada dashboard Kepsek
+
+#### FR-DSH-03: Rekapitulasi Export (Perlu Ditambah ke Backend)
+- `GET /api/reports/export?format=pdf|excel` (role: `guru_bk`, `admin`)
+
+---
+
+### 3.8 Audit Log
+
+#### FR-AUD-01: Daftar Audit Log
+- `GET /api/audit-logs` (role: `admin` only)
+- Filter: `action`, `model_type`, `user_id`
+
+#### FR-AUD-02: Detail Audit Log
+- `GET /api/audit-logs/{id}` (role: `admin` only)
+
+---
+
+### 3.9 Admin — Manajemen Pengguna (Perlu Ditambah ke Backend)
+
+#### FR-ADM-01: Daftar Pengguna
+- `GET /api/admin/users`
+
+#### FR-ADM-02: Buat/Edit/Hapus Pengguna
+- `POST /api/admin/users`
+- `PUT /api/admin/users/{id}`
+- `DELETE /api/admin/users/{id}`
+
+#### FR-ADM-03: Assign Role
+- `PUT /api/admin/users/{id}/role`
+- Assign role: `siswa`, `guru_bk`, `kepsek`, `ortu`, `admin`
+
+#### FR-ADM-04: Hubungkan Orang Tua-Anak
+- `POST /api/admin/parent-child` → hubungkan `parent_id` dan `child_id`
+
+---
+
+## 4. Alur Status Laporan (Sesuai Backend)
 
 ```
-Laporan Dibuat
-      ↓
-Laporan Masuk
-      ↓
-Menunggu Validasi
-      ↓
-Valid ──────── Ditolak
-  ↓
-Diproses
-  ↓
-Mediasi
-  ↓
-Tindak Lanjut
-  ↓
-Selesai
+submitted
+    ↓
+waiting_validation
+    ↓
+valid ───────── rejected
+    ↓
+processing
+    ↓
+mediation
+    ↓
+follow_up
+    ↓
+completed
 ```
 
-| Status | Penjelasan |
-|---|---|
-| Laporan Dibuat | Siswa mengisi form, memilih identitas, dan mengunggah bukti |
-| Laporan Masuk | Sistem menyimpan laporan dan menghasilkan kode laporan |
-| Menunggu Validasi | Guru BK memeriksa kelengkapan data dan bukti |
-| Valid | Laporan dinyatakan layak untuk diproses |
-| Ditolak | Laporan tidak dapat diproses karena data tidak valid atau bukti kurang |
-| Diproses | Guru BK mulai melakukan penanganan |
-| Mediasi | Pertemuan dengan pihak terkait |
-| Tindak Lanjut | Guru BK mencatat pembinaan dan pemantauan |
-| Selesai | Kasus diselesaikan dan diarsipkan |
+| Status (Backend) | Label UI | Aktor |
+|---|---|---|
+| `draft` | Draft | Siswa (belum kirim) |
+| `submitted` | Laporan Masuk | Sistem (saat kirim) |
+| `waiting_validation` | Menunggu Validasi | Guru BK |
+| `valid` | Valid | Guru BK |
+| `rejected` | Ditolak | Guru BK |
+| `processing` | Diproses | Guru BK |
+| `mediation` | Mediasi | Guru BK |
+| `follow_up` | Tindak Lanjut | Guru BK |
+| `completed` | Selesai | Guru BK |
 
 ---
 
-## 7. Batasan Sistem
+## 5. Kebutuhan Non-Fungsional
 
-- Sistem tidak terintegrasi secara otomatis dengan sistem akademik sekolah (versi awal)
-- Notifikasi hanya melalui antarmuka sistem; notifikasi WhatsApp/email sebagai pengembangan lanjutan
-- Laporan anonim tidak dapat dihubungkan kembali ke identitas pelapor oleh siapapun
-- Admin tidak dapat mengakses konten laporan anonim secara langsung
+### 5.1 Keamanan
+- Semua endpoint (kecuali login, register, cek status publik) dilindungi `auth:sanctum`
+- Role-based access control via Spatie Permission
+- HTTPS wajib untuk semua komunikasi
+- Laporan anonim: `is_anonymous = true` → `reporter_id` disembunyikan dari response non-admin
+- OTP berlaku 10 menit, satu kali pakai
+- Audit log mencatat semua aksi penting (validasi, mediasi, update profil, ganti password)
+
+### 5.2 Performa
+- Response API ≤ 500ms pada kondisi normal
+- Upload file bukti maks 10 MB per file, format: jpg, png, mp4, pdf, docx
+- Pagination default 20 item per halaman
+- Dashboard statistik dapat di-cache dengan TTL 5 menit
+
+### 5.3 Notifikasi
+- FCM push notification terkirim dalam ≤ 5 detik setelah event terjadi
+- Fallback: notifikasi tersimpan di tabel `notifications` dan bisa dipoll via `GET /api/notifications`
+
+### 5.4 Kompatibilitas Hybrid
+- Mobile: Android (min API 21 / Android 5.0), iOS (min iOS 12)
+- Web: Chrome, Firefox, Safari, Edge versi terbaru
+- API response konsisten JSON untuk semua platform
+
+### 5.5 Privasi
+- `is_anonymous = true`: `reporter_id` dan data identitas pelapor tidak dikembalikan ke role selain `guru_bk` dan `admin`
+- Orang tua hanya melihat data laporan anak yang terhubung via `parent_child`
+- Siswa hanya bisa melihat laporan milik sendiri
+
+---
+
+## 6. Endpoint yang Perlu Ditambah ke Backend
+
+| Endpoint | Method | Keterangan |
+|---|---|---|
+| `/api/register` | POST | Registrasi akun baru |
+| `/api/verify-otp` | POST | Verifikasi OTP |
+| `/api/resend-otp` | POST | Kirim ulang OTP |
+| `/api/reports/check` | GET | Cek status via kode laporan (publik) |
+| `/api/reports/{id}/follow-ups` | GET | Daftar tindak lanjut |
+| `/api/reports/{id}/mediations` | GET | Daftar mediasi per laporan |
+| `/api/mediations/{id}` | GET | Detail mediasi |
+| `/api/mediations/{id}/status` | PUT | Update status mediasi |
+| `/api/mediations/{id}/participants/{userId}/confirm` | PUT | Konfirmasi kehadiran |
+| `/api/dashboard/trend` | GET | Data tren untuk grafik |
+| `/api/reports/export` | GET | Export rekap PDF/Excel |
+| `/api/admin/users` | GET/POST | Manajemen pengguna |
+| `/api/admin/users/{id}` | PUT/DELETE | Edit/hapus pengguna |
+| `/api/admin/users/{id}/role` | PUT | Assign role |
+| `/api/admin/parent-child` | POST | Hubungkan orang tua-anak |
 
 ---
 

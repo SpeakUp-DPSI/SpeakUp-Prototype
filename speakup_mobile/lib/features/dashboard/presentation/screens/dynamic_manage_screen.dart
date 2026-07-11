@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
-import 'student_dashboard_screen.dart';
-import 'teacher_dashboard_screen.dart';
-import 'principal_dashboard_screen.dart';
-import 'parent_dashboard_screen.dart';
-import 'admin_dashboard_screen.dart';
+import 'admin_user_management_screen.dart';
+import 'principal_monitoring_screen.dart';
+import '../../../mediation/presentation/screens/mediation_screen.dart';
 
-class DynamicDashboardScreen extends ConsumerWidget {
-  const DynamicDashboardScreen({super.key});
+class DynamicManageScreen extends ConsumerWidget {
+  const DynamicManageScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -18,15 +16,13 @@ class DynamicDashboardScreen extends ConsumerWidget {
       final role = authState.user.roles.isNotEmpty ? authState.user.roles.first.toLowerCase() : 'siswa';
       
       if (role.contains('admin')) {
-        return const AdminDashboardScreen();
+        return const AdminUserManagementScreen();
       } else if (role.contains('kepala') || role.contains('kepsek')) {
-        return const PrincipalDashboardScreen();
+        return const PrincipalMonitoringScreen();
       } else if (role.contains('guru') || role.contains('bk')) {
-        return const TeacherDashboardScreen();
-      } else if (role.contains('ortu') || role.contains('wali') || role.contains('orangtua')) {
-        return const ParentDashboardScreen();
+        return const MediationScreen();
       } else {
-        return const StudentDashboardScreen();
+        return const Center(child: Text('Tidak ada akses kelola'));
       }
     }
 

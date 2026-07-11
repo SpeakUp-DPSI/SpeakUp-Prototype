@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:responsive_framework/responsive_framework.dart';
 import '../../../../core/theme/app_theme.dart';
 import 'package:go_router/go_router.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
@@ -34,6 +35,7 @@ class _StudentDashboardScreenState
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final reportsAsync = ref.watch(reportsListProvider);
+    final isDesktop = ResponsiveBreakpoints.of(context).largerOrEqualTo(DESKTOP);
 
     String userName = 'Siswa';
     if (authState is AuthSuccess) {
@@ -51,117 +53,286 @@ class _StudentDashboardScreenState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ─── AppBar ──────────────────────────────────────────────
-                _buildAppBar(context),
+                // ─── AppBar (only on mobile) ─────────────────────────────
+                if (!isDesktop) _buildAppBar(context),
 
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 16),
-
-                      // ─── Greeting ───────────────────────────────────
-                      _buildGreeting(userName),
-                      const SizedBox(height: 20),
-
-                      // ─── Banner Carousel ─────────────────────────────
-                      _buildBanner(context),
-                      const SizedBox(height: 24),
-
-                      // ─── Ringkasan Laporan ───────────────────────────
-                      const Text(
-                        'Ringkasan Laporan',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.neutral900,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      reportsAsync.when(
-                        loading: () => _buildStatCards(0, 0, 0, 0),
-                        error: (e, _) => _buildStatCards(0, 0, 0, 0),
-                        data: (reports) {
-                          final total = reports.length;
-                          final processed = reports
-                              .where((r) => r.status == 'processing')
-                              .length;
-                          final completed = reports
-                              .where((r) => r.status == 'completed')
-                              .length;
-                          final rejected = reports
-                              .where((r) => r.status == 'rejected')
-                              .length;
-                          return _buildStatCards(
-                              total, processed, completed, rejected);
-                        },
-                      ),
-                      const SizedBox(height: 24),
-
-                      // ─── Aktivitas Terkini ───────────────────────────
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Aktivitas Terkini',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.neutral900,
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () => context.go('/reports'),
-                            child: const Row(
-                              children: [
-                                Text(
-                                  'Lihat semua',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: AppTheme.primary600,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                Icon(Icons.chevron_right,
-                                    size: 18, color: AppTheme.primary600),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      reportsAsync.when(
-                        loading: () => const Center(
-                            child: CircularProgressIndicator()),
-                        error: (e, _) => _buildEmptyActivity(context),
-                        data: (reports) {
-                          if (reports.isEmpty) {
-                            return _buildEmptyActivity(context);
-                          }
-                          return Column(
-                            children: reports
-                                .take(5)
-                                .map((r) => _buildActivityItem(
-                                      context,
-                                      r.reportCode,
-                                      r.title,
-                                      r.status,
-                                      r.id,
-                                    ))
-                                .toList(),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 24),
-                    ],
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isDesktop ? 32 : 20,
+                    vertical: isDesktop ? 24 : 0,
                   ),
+                  child: isDesktop
+                      ? _buildDesktopContent(userName, reportsAsync, context)
+                      : _buildMobileContent(userName, reportsAsync, context),
                 ),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  // ─── Desktop Content ─────────────────────────────────────────────────
+  Widget _buildDesktopContent(String userName, AsyncValue reportsAsync, BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildGreeting(userName),
+        const SizedBox(height: 24),
+
+        // ─── Two-column layout: Main + Sidebar ───────────
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Main content (left)
+            Expanded(
+              flex: 3,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ─── Stat Cards ────────
+                  const Text(
+                    'Ringkasan Laporan',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.neutral900,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  reportsAsync.when(
+                    loading: () => _buildStatCards(0, 0, 0, 0),
+                    error: (e, _) => _buildStatCards(0, 0, 0, 0),
+                    data: (reports) {
+                      final total = reports.length;
+                      final processed = reports
+                          .where((r) => r.status == 'processing')
+                          .length;
+                      final completed = reports
+                          .where((r) => r.status == 'completed')
+                          .length;
+                      final rejected = reports
+                          .where((r) => r.status == 'rejected')
+                          .length;
+                      return _buildStatCards(total, processed, completed, rejected);
+                    },
+                  ),
+                  const SizedBox(height: 24),
+
+                  // ─── Aktivitas Terkini ─────
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Aktivitas Terkini',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.neutral900,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => context.go('/reports'),
+                        child: const Row(
+                          children: [
+                            Text(
+                              'Lihat semua',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: AppTheme.primary600,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            Icon(Icons.chevron_right,
+                                size: 18, color: AppTheme.primary600),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  reportsAsync.when(
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (e, _) => _buildEmptyActivity(context),
+                    data: (reports) {
+                      if (reports.isEmpty) return _buildEmptyActivity(context);
+                      // Desktop: table-style report cards
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppTheme.neutral100),
+                        ),
+                        child: Column(
+                          children: [
+                            // Table header
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: AppTheme.neutral50,
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(16),
+                                  topRight: Radius.circular(16),
+                                ),
+                              ),
+                              child: const Row(
+                                children: [
+                                  SizedBox(width: 42 + 12), // icon + gap
+                                  Expanded(flex: 2, child: Text('Kode', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.neutral500))),
+                                  Expanded(flex: 3, child: Text('Kategori', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.neutral500))),
+                                  SizedBox(width: 100, child: Text('Status', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.neutral500))),
+                                ],
+                              ),
+                            ),
+                            ...reports.take(7).map((r) => _buildActivityItem(
+                              context, r.reportCode, r.title, r.status, r.id,
+                              isDesktop: true,
+                            )),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
+            const SizedBox(width: 24),
+            // Sidebar (right)
+            Expanded(
+              flex: 2,
+              child: Column(
+                children: [
+                  // ─── Banner ──────
+                  _buildBanner(context),
+                  const SizedBox(height: 20),
+                  // ─── Tips Card ──────
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppTheme.neutral100),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppTheme.primary50,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(Icons.lightbulb_outline, color: AppTheme.primary600, size: 20),
+                            ),
+                            const SizedBox(width: 10),
+                            const Text('Tips Pelaporan',
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.neutral900),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        _tipItem('Ceritakan kronologi dengan jelas'),
+                        _tipItem('Sertakan bukti jika memungkinkan'),
+                        _tipItem('Gunakan fitur anonim jika perlu'),
+                        _tipItem('Laporkan segera, jangan ditunda'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _tipItem(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.check_circle_outline, size: 16, color: AppTheme.primary600),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(text,
+              style: const TextStyle(fontSize: 12, color: AppTheme.neutral600, height: 1.4),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Mobile Content (original layout) ────────────────────────────────
+  Widget _buildMobileContent(String userName, AsyncValue reportsAsync, BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 16),
+        _buildGreeting(userName),
+        const SizedBox(height: 20),
+        _buildBanner(context),
+        const SizedBox(height: 24),
+        const Text(
+          'Ringkasan Laporan',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: AppTheme.neutral900,
+          ),
+        ),
+        const SizedBox(height: 12),
+        reportsAsync.when(
+          loading: () => _buildStatCards(0, 0, 0, 0),
+          error: (e, _) => _buildStatCards(0, 0, 0, 0),
+          data: (reports) {
+            final total = reports.length;
+            final processed = reports.where((r) => r.status == 'processing').length;
+            final completed = reports.where((r) => r.status == 'completed').length;
+            final rejected = reports.where((r) => r.status == 'rejected').length;
+            return _buildStatCards(total, processed, completed, rejected);
+          },
+        ),
+        const SizedBox(height: 24),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Aktivitas Terkini',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.neutral900),
+            ),
+            GestureDetector(
+              onTap: () => context.go('/reports'),
+              child: const Row(
+                children: [
+                  Text('Lihat semua', style: TextStyle(fontSize: 13, color: AppTheme.primary600, fontWeight: FontWeight.w500)),
+                  Icon(Icons.chevron_right, size: 18, color: AppTheme.primary600),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        reportsAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => _buildEmptyActivity(context),
+          data: (reports) {
+            if (reports.isEmpty) return _buildEmptyActivity(context);
+            return Column(
+              children: reports.take(5).map((r) => _buildActivityItem(
+                context, r.reportCode, r.title, r.status, r.id,
+              )).toList(),
+            );
+          },
+        ),
+        const SizedBox(height: 24),
+      ],
     );
   }
 
@@ -429,12 +600,59 @@ class _StudentDashboardScreenState
     String code,
     String title,
     String status,
-    int id,
-  ) {
+    int id, {
+    bool isDesktop = false,
+  }) {
     final icon = _getCategoryIcon(title);
     final statusLabel = _formatStatus(status);
     final badgeColor = _getBadgeColor(status);
 
+    if (isDesktop) {
+      // Desktop: table-row style
+      return InkWell(
+        onTap: () => context.push('/report/$id'),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: const BoxDecoration(
+            border: Border(bottom: BorderSide(color: AppTheme.neutral100)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: AppTheme.primary50,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: AppTheme.primary600, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 2,
+                child: Text(code, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.neutral900)),
+              ),
+              Expanded(
+                flex: 3,
+                child: Text(title, style: const TextStyle(fontSize: 12, color: AppTheme.neutral600), overflow: TextOverflow.ellipsis),
+              ),
+              SizedBox(
+                width: 100,
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(color: badgeColor, borderRadius: BorderRadius.circular(20)),
+                    child: Text(statusLabel, style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Mobile: card style
     return GestureDetector(
       onTap: () => context.push('/report/$id'),
       child: Container(
@@ -461,39 +679,16 @@ class _StudentDashboardScreenState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    code,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: AppTheme.neutral900,
-                    ),
-                  ),
+                  Text(code, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.neutral900)),
                   const SizedBox(height: 2),
-                  Text(
-                    title,
-                    style: const TextStyle(
-                        fontSize: 12, color: AppTheme.neutral500),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  Text(title, style: const TextStyle(fontSize: 12, color: AppTheme.neutral500), maxLines: 1, overflow: TextOverflow.ellipsis),
                 ],
               ),
             ),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: badgeColor,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                statusLabel,
-                style: const TextStyle(
-                    fontSize: 11,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600),
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(color: badgeColor, borderRadius: BorderRadius.circular(20)),
+              child: Text(statusLabel, style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600)),
             ),
           ],
         ),

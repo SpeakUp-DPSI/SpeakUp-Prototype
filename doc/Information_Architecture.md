@@ -1,723 +1,645 @@
 # Information Architecture
 ## SpeakUp — Sistem Pelaporan dan Penanganan Kasus Perundungan
-**Versi:** 1.0  
-**Tanggal:** Juni 2025  
-**Program Studi:** Sistem Informasi — Universitas Ahmad Dahlan Yogyakarta  
-**Mata Kuliah:** Desain dan Pengembangan Sistem Informasi  
-**Dosen Pengampu:** Farid Suryanto, S.Pd., MT.
+**Versi:** 2.0 (Revised — Hybrid Mobile & Web)
+**Tanggal:** Juli 2026
+**Backend:** Laravel REST API
+**Program Studi:** Sistem Informasi — Universitas Ahmad Dahlan Yogyakarta
 
 ---
 
 ## 1. Gambaran Umum Arsitektur
 
-SpeakUp dibagi menjadi enam area utama berdasarkan peran pengguna. Pembagian ini memastikan setiap aktor hanya melihat fitur dan informasi yang relevan dengan tanggung jawabnya.
+SpeakUp adalah aplikasi **hybrid** (mobile + web) yang mengonsumsi satu backend Laravel API. Arsitektur dibagi berdasarkan dua dimensi:
+
+1. **Platform** — Mobile App vs Web App
+2. **Role Pengguna** — Siswa, Guru BK, Kepala Sekolah, Orang Tua/Wali, Admin
 
 ```
 SPEAKUP
 │
-├── 1. Halaman Publik          ← Tanpa login
-├── 2. Dashboard Siswa         ← Login sebagai Siswa
-├── 3. Dashboard Guru BK       ← Login sebagai Guru BK
-├── 4. Dashboard Kepala Sekolah ← Login sebagai Kepala Sekolah
-├── 5. Dashboard Orang Tua/Wali ← Login sebagai Orang Tua/Wali
-└── 6. Pengaturan              ← Semua pengguna (sesuai hak akses)
+├── AUTH AREA              ← Semua platform, sebelum login
+│   ├── Login
+│   ├── Daftar (Register)
+│   ├── Verifikasi OTP
+│   └── Verifikasi Berhasil
+│
+├── AREA SISWA             ← Mobile (utama) + Web
+├── AREA GURU BK           ← Mobile + Web
+├── AREA KEPALA SEKOLAH    ← Web (utama) + Mobile (read-only)
+├── AREA ORANG TUA/WALI    ← Mobile (utama) + Web
+└── AREA ADMIN             ← Web only
 ```
 
 ---
 
-## 2. Sitemap Lengkap
+## 2. Auth Flow
+
+```
+┌─────────────────────────────────────────────────────┐
+│                    AUTH AREA                        │
+│  (Semua pengguna, sebelum login)                    │
+│                                                     │
+│  Login ──────────────────────────────► Dashboard    │
+│                                                     │
+│  Daftar                                             │
+│    ↓                                                │
+│  Verifikasi OTP                                     │
+│    ↓ (benar)         ↓ (salah)                      │
+│  Verifikasi          Error: "Kode Verifikasi Salah" │
+│  Berhasil            → Coba lagi / Kirim ulang OTP  │
+│    ↓                                                │
+│  Login → Dashboard                                  │
+└─────────────────────────────────────────────────────┘
+```
+
+### API Endpoints Auth
+
+| Screen | Method | Endpoint |
+|---|---|---|
+| Login | POST | `/api/login` |
+| Daftar | POST | `/api/register` *(perlu ditambah)* |
+| Verifikasi OTP | POST | `/api/verify-otp` *(perlu ditambah)* |
+| Kirim Ulang OTP | POST | `/api/resend-otp` *(perlu ditambah)* |
+| Logout | POST | `/api/logout` |
+
+---
+
+## 3. Sitemap Lengkap
 
 ```
 SPEAKUP
 │
-├── 1. HALAMAN PUBLIK
+├── AUTH
+│   ├── Login
+│   ├── Daftar
+│   │   ├── Form: nama, email, password, phone, role
+│   │   └── Submit → OTP dikirim ke email
+│   ├── Verifikasi OTP
+│   │   ├── 6 kotak input kode
+│   │   ├── State: Default / Salah / Berhasil
+│   │   └── Link: Kirim Ulang Kode
+│   └── Pendaftaran Berhasil
+│
+├── SISWA
 │   │
-│   ├── 1.1 Beranda
-│   │   ├── Informasi Sistem
-│   │   │   ├── Deskripsi Sistem
-│   │   │   ├── Tujuan Sistem
-│   │   │   └── Manfaat Sistem
-│   │   ├── Alur Penggunaan Sistem
-│   │   │   ├── Cara Membuat Laporan
-│   │   │   ├── Cara Mengunggah Bukti
-│   │   │   ├── Cara Mendapatkan Kode Laporan
-│   │   │   └── Cara Mengecek Status Laporan
-│   │   └── Akses Cepat
-│   │       ├── Tombol Buat Laporan
-│   │       ├── Tombol Cek Status Laporan
-│   │       └── Kontak Bantuan Guru BK
+│   ├── Beranda
+│   │   ├── Greeting (nama pengguna)
+│   │   ├── Stat Cards
+│   │   │   ├── Laporan Dibuat
+│   │   │   ├── Sedang Diproses
+│   │   │   └── Selesai
+│   │   ├── Aksi Cepat: Buat Laporan Baru
+│   │   └── Laporan Terbaru (3 item)
 │   │
-│   ├── 1.2 Edukasi Anti Perundungan
-│   │   ├── Pengertian Perundungan
-│   │   ├── Jenis-Jenis Perundungan
-│   │   │   ├── Perundungan Fisik
-│   │   │   ├── Perundungan Verbal
-│   │   │   ├── Perundungan Sosial
-│   │   │   └── Cyberbullying
-│   │   ├── Dampak Perundungan
-│   │   │   ├── Dampak Psikologis
-│   │   │   ├── Dampak Sosial
-│   │   │   └── Dampak Akademik
-│   │   └── Cara Melapor
-│   │       ├── Panduan Pelaporan
-│   │       ├── Ketentuan Laporan
-│   │       └── Perlindungan Identitas Pelapor
-│   │
-│   ├── 1.3 Buat Laporan
-│   │   ├── Form Data Kejadian
-│   │   │   ├── Jenis Perundungan
-│   │   │   ├── Tanggal Kejadian
-│   │   │   ├── Waktu Kejadian
+│   ├── Buat Laporan (Multi-Step)
+│   │   ├── Step 1: Data Kejadian
+│   │   │   ├── Jenis Perundungan (fisik/verbal/sosial/cyberbullying)
+│   │   │   ├── Judul Laporan
+│   │   │   ├── Tanggal & Waktu Kejadian
 │   │   │   ├── Lokasi Kejadian
-│   │   │   ├── Pihak yang Terlibat
-│   │   │   └── Kronologi Kejadian
-│   │   ├── Pilihan Identitas Pelapor
-│   │   │   ├── Lapor dengan Identitas
-│   │   │   └── Lapor Secara Anonim
-│   │   ├── Upload Bukti
-│   │   │   ├── Foto
-│   │   │   ├── Video
-│   │   │   ├── Dokumen
-│   │   │   └── Keterangan Bukti
-│   │   ├── Review Laporan
-│   │   │   ├── Ringkasan Data Laporan
-│   │   │   ├── Validasi Kelengkapan Data
-│   │   │   └── Persetujuan Pengiriman
+│   │   │   ├── Kronologi / Deskripsi
+│   │   │   └── Data Pihak Terlibat
+│   │   │       ├── Korban (nama, kelas)
+│   │   │       ├── Terlapor (nama, kelas)
+│   │   │       └── Saksi (opsional)
+│   │   ├── Step 2: Bukti & Identitas
+│   │   │   ├── Upload Bukti (foto/video/dokumen, maks 10MB)
+│   │   │   └── Pilihan Identitas Pelapor
+│   │   │       ├── Lapor dengan Identitas
+│   │   │       └── Lapor Secara Anonim (is_anonymous: true)
+│   │   ├── Step 3: Review & Kirim
+│   │   │   ├── Ringkasan semua data
+│   │   │   └── Tombol Kirim Laporan
 │   │   └── Konfirmasi Pengiriman
-│   │       ├── Pesan Laporan Berhasil Dikirim
-│   │       ├── Kode Laporan
-│   │       └── Instruksi Cek Status Laporan
+│   │       ├── Kode Laporan (SPK-YYYY-NNNNN)
+│   │       └── Instruksi cek status
 │   │
-│   └── 1.4 Cek Status Laporan
-│       ├── Input Kode Laporan
-│       ├── Validasi Kode Laporan
-│       └── Detail Status Laporan
-│           ├── Status Laporan
-│           ├── Tanggal Laporan
-│           ├── Tahap Penanganan
-│           ├── Catatan Umum dari Guru BK
-│           └── Riwayat Perubahan Status
-│
-├── 2. DASHBOARD SISWA
-│   │
-│   ├── 2.1 Dashboard Utama Siswa
-│   │   ├── Ringkasan Laporan
-│   │   ├── Jumlah Laporan Dibuat
-│   │   ├── Laporan Sedang Diproses
-│   │   └── Laporan Selesai
-│   │
-│   ├── 2.2 Buat Laporan Baru
-│   │   ├── Form Laporan
-│   │   ├── Upload Bukti
-│   │   └── Konfirmasi Pengiriman
-│   │
-│   ├── 2.3 Riwayat Laporan
-│   │   ├── Daftar Laporan
-│   │   ├── Kode Laporan
-│   │   ├── Tanggal Laporan
-│   │   └── Status Laporan
-│   │
-│   ├── 2.4 Detail Status Laporan
-│   │   ├── Informasi Laporan
-│   │   ├── Status Penanganan
-│   │   ├── Catatan Perkembangan
-│   │   └── Riwayat Status
-│   │
-│   └── 2.5 Bantuan
-│       ├── Panduan Penggunaan Sistem
-│       ├── Pertanyaan Umum (FAQ)
-│       └── Kontak Guru BK
-│
-├── 3. DASHBOARD GURU BK
-│   │
-│   ├── 3.1 Dashboard Utama
-│   │   ├── Total Laporan Masuk
-│   │   ├── Laporan Menunggu Validasi
-│   │   ├── Laporan Valid
-│   │   ├── Laporan Diproses
-│   │   ├── Laporan Mediasi
-│   │   └── Laporan Selesai
-│   │
-│   ├── 3.2 Manajemen Laporan
-│   │   ├── Daftar Laporan Masuk
+│   ├── Riwayat Laporan
+│   │   ├── Filter Status (chip horizontal)
+│   │   ├── List Laporan (card per item)
 │   │   │   ├── Kode Laporan
-│   │   │   ├── Tanggal Laporan
-│   │   │   ├── Jenis Perundungan
-│   │   │   ├── Status Laporan
-│   │   │   └── Aksi Lihat Detail
-│   │   ├── Detail Laporan
-│   │   │   ├── Data Kejadian
-│   │   │   ├── Kronologi Kejadian
-│   │   │   ├── Identitas Pelapor
-│   │   │   ├── Data Korban
-│   │   │   ├── Data Terlapor
-│   │   │   └── Data Saksi
-│   │   ├── Validasi Laporan
-│   │   │   ├── Pemeriksaan Kelengkapan Data
-│   │   │   ├── Pemeriksaan Kronologi
-│   │   │   ├── Penentuan Valid atau Tidak Valid
-│   │   │   └── Catatan Validasi
-│   │   ├── Pemeriksaan Bukti
-│   │   │   ├── Daftar Bukti
-│   │   │   ├── Preview Bukti
-│   │   │   ├── Keterangan Bukti
-│   │   │   └── Catatan Pemeriksaan Bukti
-│   │   └── Update Status
-│   │       ├── Baru
-│   │       ├── Menunggu Validasi
-│   │       ├── Valid
-│   │       ├── Diproses
-│   │       ├── Mediasi
-│   │       ├── Tindak Lanjut
-│   │       ├── Selesai
-│   │       └── Ditolak
+│   │   │   ├── Judul
+│   │   │   ├── Tanggal
+│   │   │   └── Badge Status
+│   │   └── Detail Laporan
+│   │       ├── Informasi Lengkap Laporan
+│   │       ├── Status Saat Ini
+│   │       ├── Timeline Riwayat Status
+│   │       └── Catatan dari Guru BK (terbatas)
 │   │
-│   ├── 3.3 Mediasi
+│   ├── Notifikasi
+│   │   ├── List notifikasi (paginate)
+│   │   ├── Badge unread count
+│   │   └── Tandai dibaca (per item / semua)
+│   │
+│   └── Profil
+│       ├── Data Akun (nama, email, foto)
+│       ├── Edit Profil
+│       ├── Ubah Password
+│       └── Logout
+│
+├── GURU BK
+│   │
+│   ├── Dashboard Utama
+│   │   ├── Greeting + tanggal
+│   │   ├── Stat Cards
+│   │   │   ├── Total Laporan
+│   │   │   ├── Menunggu Validasi
+│   │   │   ├── Sedang Diproses
+│   │   │   └── Selesai
+│   │   └── Laporan Terbaru (5 item)
+│   │
+│   ├── Manajemen Laporan
+│   │   ├── Tab Filter: Semua / Menunggu / Diproses / Mediasi / Selesai
+│   │   ├── List Laporan
+│   │   │   ├── Kode Laporan
+│   │   │   ├── Judul & Kategori
+│   │   │   ├── Tanggal
+│   │   │   └── Badge Status
+│   │   └── Detail Laporan
+│   │       ├── Data Lengkap Laporan
+│   │       │   ├── Judul, Kronologi, Lokasi, Tanggal
+│   │       │   ├── Kategori Perundungan
+│   │       │   ├── Identitas Pelapor (hidden jika anonim)
+│   │       │   └── Data Pihak: Korban, Terlapor, Saksi
+│   │       ├── Bukti Pendukung
+│   │       │   ├── Preview file (foto/video/dokumen)
+│   │       │   └── Download bukti
+│   │       ├── Validasi Laporan
+│   │       │   ├── Tombol: Valid / Tolak
+│   │       │   └── Kolom catatan validasi
+│   │       ├── Update Status Laporan
+│   │       │   └── Dropdown status + catatan
+│   │       ├── Riwayat Status (timeline)
+│   │       └── Aksi Lanjutan
+│   │           ├── Buat Jadwal Mediasi
+│   │           └── Catat Tindak Lanjut
+│   │
+│   ├── Mediasi
+│   │   ├── List Jadwal Mediasi
+│   │   │   ├── Mendatang
+│   │   │   ├── Berlangsung
+│   │   │   └── Selesai
 │   │   ├── Buat Jadwal Mediasi
-│   │   │   ├── Tanggal Mediasi
-│   │   │   ├── Waktu Mediasi
-│   │   │   ├── Tempat Mediasi
-│   │   │   └── Agenda Mediasi
-│   │   ├── Daftar Jadwal Mediasi
-│   │   │   ├── Jadwal Mendatang
-│   │   │   ├── Jadwal Berlangsung
-│   │   │   └── Jadwal Selesai
-│   │   ├── Peserta Mediasi
-│   │   │   ├── Guru BK
-│   │   │   ├── Korban
-│   │   │   ├── Terlapor
-│   │   │   ├── Orang Tua/Wali
-│   │   │   └── Pihak Sekolah
-│   │   └── Hasil Mediasi
-│   │       ├── Catatan Mediasi
-│   │       ├── Kesepakatan Mediasi
-│   │       ├── Rekomendasi Lanjutan
-│   │       └── Status Hasil Mediasi
+│   │   │   ├── Pilih Laporan
+│   │   │   ├── Tanggal & Waktu
+│   │   │   ├── Lokasi
+│   │   │   └── Peserta (korban, terlapor, orang tua)
+│   │   └── Detail Mediasi
+│   │       ├── Info jadwal
+│   │       ├── Daftar peserta + status konfirmasi kehadiran
+│   │       ├── Update status mediasi (ongoing/completed/cancelled)
+│   │       └── Input hasil/kesepakatan mediasi
 │   │
-│   ├── 3.4 Tindak Lanjut
-│   │   ├── Catatan Pembinaan
-│   │   ├── Rekomendasi Tindakan
-│   │   ├── Sanksi atau Pembinaan
-│   │   ├── Pemantauan Perkembangan Siswa
-│   │   └── Penyelesaian Kasus
+│   ├── Tindak Lanjut
+│   │   ├── List tindak lanjut per laporan
+│   │   └── Form catat tindak lanjut
+│   │       ├── Pilih laporan
+│   │       ├── Tindakan yang diambil
+│   │       └── Catatan
 │   │
-│   ├── 3.5 Riwayat Perilaku Siswa
-│   │   ├── Data Siswa
-│   │   │   ├── Nama Siswa
-│   │   │   ├── NIS
-│   │   │   ├── Kelas
-│   │   │   └── Kontak Orang Tua/Wali
-│   │   ├── Riwayat Kasus
-│   │   │   ├── Kasus Sebagai Korban
-│   │   │   ├── Kasus Sebagai Terlapor
-│   │   │   └── Kasus Sebagai Saksi
-│   │   └── Catatan Guru BK
-│   │       ├── Catatan Konseling
-│   │       ├── Catatan Pembinaan
-│   │       └── Catatan Perkembangan
+│   ├── Riwayat Perilaku Siswa
+│   │   ├── Cari siswa (by name/NIS)
+│   │   ├── Data siswa: nama, kelas, kontak orang tua
+│   │   └── Riwayat kasus: korban / terlapor / saksi
 │   │
-│   └── 3.6 Laporan / Rekapitulasi
-│       ├── Rekap Harian
-│       ├── Rekap Mingguan
-│       ├── Rekap Bulanan
-│       ├── Grafik Kasus
-│       │   ├── Grafik Berdasarkan Jenis Perundungan
-│       │   ├── Grafik Berdasarkan Status Laporan
-│       │   └── Grafik Berdasarkan Periode Waktu
-│       └── Export Laporan
-│           ├── Export PDF
-│           ├── Export Excel
-│           └── Cetak Laporan
+│   ├── Laporan & Rekapitulasi
+│   │   ├── Rekap Harian / Mingguan / Bulanan
+│   │   ├── Grafik per kategori perundungan
+│   │   ├── Grafik per status
+│   │   └── Export (PDF / Excel)
+│   │
+│   ├── Notifikasi
+│   └── Profil & Pengaturan
 │
-├── 4. DASHBOARD KEPALA SEKOLAH
+├── KEPALA SEKOLAH
 │   │
-│   ├── 4.1 Statistik Kasus
-│   │   ├── Total Kasus Perundungan
-│   │   ├── Jumlah Kasus Baru
-│   │   ├── Jumlah Kasus Diproses
-│   │   ├── Jumlah Kasus Selesai
-│   │   └── Jumlah Kasus Ditolak
+│   ├── Dashboard Utama
+│   │   ├── Stat Cards (2×2 grid)
+│   │   │   ├── Total Kasus
+│   │   │   ├── Kasus Baru (bulan ini)
+│   │   │   ├── Sedang Diproses
+│   │   │   └── Selesai
+│   │   ├── Grafik Donut: per Kategori Perundungan
+│   │   └── Grafik Bar/Line: Tren Bulanan
 │   │
-│   ├── 4.2 Grafik Tren Perundungan
-│   │   ├── Tren Kasus Harian
-│   │   ├── Tren Kasus Bulanan
-│   │   ├── Tren Jenis Perundungan
-│   │   └── Tren Penyelesaian Kasus
+│   ├── Rekapitulasi Kasus
+│   │   ├── Filter: periode, kategori, status, kelas
+│   │   ├── Tabel rekap
+│   │   └── Export PDF/Excel
 │   │
-│   ├── 4.3 Rekapitulasi Kasus
-│   │   ├── Rekap Berdasarkan Jenis Perundungan
-│   │   ├── Rekap Berdasarkan Kelas
-│   │   ├── Rekap Berdasarkan Status
-│   │   └── Rekap Berdasarkan Periode
+│   ├── Monitoring Penanganan
+│   │   ├── Daftar kasus aktif
+│   │   ├── Progress per kasus
+│   │   └── Kasus yang memerlukan perhatian (lama tidak ada update)
 │   │
-│   ├── 4.4 Monitoring Penanganan
-│   │   ├── Daftar Kasus Aktif
-│   │   ├── Progres Penanganan Kasus
-│   │   ├── Kasus yang Membutuhkan Perhatian
-│   │   └── Evaluasi Tindak Lanjut
+│   ├── Laporan Kebijakan
+│   │   ├── Ringkasan kasus per periode
+│   │   ├── Analisis kategori dominan
+│   │   └── Rekomendasi pencegahan
 │   │
-│   └── 4.5 Laporan Kebijakan
-│       ├── Ringkasan Kasus
-│       ├── Analisis Permasalahan
-│       ├── Rekomendasi Pencegahan
-│       └── Laporan untuk Pengambilan Keputusan
+│   ├── Notifikasi
+│   └── Profil & Pengaturan
 │
-├── 5. DASHBOARD ORANG TUA/WALI
+├── ORANG TUA/WALI
 │   │
-│   ├── 5.1 Notifikasi
-│   │   ├── Notifikasi Anak Terlibat Kasus
-│   │   ├── Notifikasi Jadwal Mediasi
-│   │   ├── Notifikasi Perubahan Status
-│   │   └── Notifikasi Hasil Tindak Lanjut
+│   ├── Beranda
+│   │   ├── Notifikasi terbaru
+│   │   └── Status keterlibatan anak
 │   │
-│   ├── 5.2 Detail Informasi Anak
-│   │   ├── Data Anak
-│   │   ├── Status Keterlibatan dalam Kasus
-│   │   ├── Ringkasan Kasus
-│   │   └── Catatan Terbatas dari Guru BK
+│   ├── Informasi Anak
+│   │   ├── Data anak (nama, kelas)
+│   │   ├── Status keterlibatan dalam kasus
+│   │   ├── Ringkasan kasus (terbatas)
+│   │   └── Catatan terbatas dari Guru BK
 │   │
-│   ├── 5.3 Jadwal Mediasi
-│   │   ├── Tanggal Mediasi
-│   │   ├── Waktu Mediasi
-│   │   ├── Tempat Mediasi
-│   │   ├── Agenda Mediasi
-│   │   └── Peserta Mediasi
+│   ├── Jadwal Mediasi
+│   │   ├── List jadwal mendatang
+│   │   ├── Detail jadwal: tanggal, waktu, lokasi, agenda
+│   │   └── Konfirmasi Kehadiran
+│   │       ├── Hadir
+│   │       ├── Tidak Hadir
+│   │       └── Ajukan Perubahan Jadwal
 │   │
-│   ├── 5.4 Konfirmasi Kehadiran
-│   │   ├── Hadir
-│   │   ├── Tidak Hadir
-│   │   └── Ajukan Perubahan Jadwal
+│   ├── Hasil Tindak Lanjut
+│   │   ├── Ringkasan hasil mediasi
+│   │   ├── Rekomendasi Guru BK
+│   │   └── Status penyelesaian kasus
 │   │
-│   └── 5.5 Hasil Tindak Lanjut
-│       ├── Ringkasan Hasil Mediasi
-│       ├── Rekomendasi Guru BK
-│       ├── Catatan Pembinaan
-│       └── Status Penyelesaian Kasus
+│   ├── Notifikasi
+│   └── Profil & Pengaturan
 │
-└── 6. PENGATURAN
+└── ADMIN (Web Only)
     │
-    ├── 6.1 Profil Pengguna
-    │   ├── Data Akun
-    │   ├── Data Pribadi
-    │   └── Ubah Profil
+    ├── Dashboard Admin
+    │   └── Ringkasan sistem
     │
-    ├── 6.2 Hak Akses (Admin)
-    │   ├── Role Siswa
-    │   ├── Role Guru BK
-    │   ├── Role Kepala Sekolah
-    │   └── Role Orang Tua/Wali
+    ├── Manajemen Pengguna
+    │   ├── Daftar pengguna (filter by role)
+    │   ├── Tambah / Edit / Hapus pengguna
+    │   ├── Assign role
+    │   └── Hubungkan orang tua-anak (parent_child)
     │
-    ├── 6.3 Keamanan Akun
-    │   ├── Ubah Password
-    │   ├── Verifikasi Akun
-    │   └── Pengaturan Privasi
+    ├── Audit Log
+    │   ├── Daftar semua aktivitas sistem
+    │   ├── Filter: action, model_type, user_id
+    │   └── Detail log
     │
-    └── 6.4 Logout
+    └── Pengaturan Sistem
 ```
 
 ---
 
-## 3. Diagram Area Berdasarkan Pengguna
+## 4. Navigasi per Platform & Role
 
+### 4.1 Mobile — Bottom Navigation
+
+| Role | Tab 1 | Tab 2 | Tab 3 | Tab 4 |
+|---|---|---|---|---|
+| Siswa | Beranda | Buat Laporan | Riwayat | Profil |
+| Guru BK | Dashboard | Laporan | Mediasi | Profil |
+| Orang Tua/Wali | Beranda | Info Anak | Jadwal | Profil |
+
+> Kepala Sekolah dan Admin: tidak menggunakan bottom nav — primary via sidebar (web) atau hamburger menu (mobile).
+
+### 4.2 Web — Sidebar Navigation
+
+**Guru BK:**
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        SPEAKUP                              │
-│                                                             │
-│  ┌────────────────┐   Semua Pengguna (tanpa login)          │
-│  │  PUBLIK AREA   │                                         │
-│  │  - Beranda     │                                         │
-│  │  - Edukasi     │                                         │
-│  │  - Buat Laporan│                                         │
-│  │  - Cek Status  │                                         │
-│  └────────────────┘                                         │
-│                                                             │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐       │
-│  │  SISWA   │ │ GURU BK  │ │ KEP.SEK  │ │ ORG TUA  │       │
-│  │          │ │          │ │          │ │          │       │
-│  │Dashboard │ │Dashboard │ │Statistik │ │Notifikasi│       │
-│  │Buat Lap. │ │Mgmt Lap. │ │Grafik    │ │Info Anak │       │
-│  │Riwayat   │ │Mediasi   │ │Rekap     │ │Mediasi   │       │
-│  │Status    │ │Tindak    │ │Monitoring│ │Konfirmasi│       │
-│  │Bantuan   │ │Lanjut    │ │Kebijakan │ │Hasil     │       │
-│  │          │ │Riwayat   │ │          │ │          │       │
-│  │          │ │Rekap     │ │          │ │          │       │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────┘       │
-│                                                             │
-│  ┌────────────────────────────────────────────────────┐     │
-│  │  PENGATURAN  (semua pengguna, sesuai hak akses)    │     │
-│  │  Profil | Hak Akses (Admin) | Keamanan | Logout    │     │
-│  └────────────────────────────────────────────────────┘     │
-└─────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 4. Navigasi Sistem
-
-### 4.1 Primary Navigation per Peran
-
-| Pengguna | Menu Utama |
-|---|---|
-| Siswa | Beranda, Edukasi, Buat Laporan, Cek Status, Dashboard, Bantuan, Pengaturan |
-| Guru BK | Dashboard Utama, Manajemen Laporan, Mediasi, Tindak Lanjut, Riwayat Perilaku Siswa, Laporan/Rekapitulasi, Pengaturan |
-| Kepala Sekolah | Statistik Kasus, Grafik Tren, Rekapitulasi Kasus, Monitoring Penanganan, Laporan Kebijakan, Pengaturan |
-| Orang Tua/Wali | Notifikasi, Detail Informasi Anak, Jadwal Mediasi, Konfirmasi Kehadiran, Hasil Tindak Lanjut, Pengaturan |
-| Admin | Profil Pengguna, Hak Akses, Keamanan Akun, Pengaturan Sistem |
-
-### 4.2 Secondary Navigation (Submenu)
-
-**Manajemen Laporan (Guru BK):**
-```
+Dashboard
 Manajemen Laporan
-├── Daftar Laporan Masuk
-├── Detail Laporan
-├── Validasi Laporan
-├── Pemeriksaan Bukti
-└── Update Status
+  ├── Semua Laporan
+  ├── Menunggu Validasi
+  └── Laporan Aktif
+Mediasi
+Tindak Lanjut
+Riwayat Perilaku Siswa
+Laporan & Rekapitulasi
+── divider ──
+Notifikasi
+Pengaturan
+Logout
 ```
 
-**Dashboard Orang Tua/Wali:**
+**Kepala Sekolah:**
 ```
-Dashboard Orang Tua/Wali
-├── Notifikasi
-├── Detail Informasi Anak
-├── Jadwal Mediasi
-├── Konfirmasi Kehadiran
-└── Hasil Tindak Lanjut
+Dashboard
+Rekapitulasi Kasus
+Monitoring Penanganan
+Laporan Kebijakan
+── divider ──
+Notifikasi
+Pengaturan
+Logout
+```
+
+**Admin:**
+```
+Dashboard
+Manajemen Pengguna
+Audit Log
+Pengaturan Sistem
+── divider ──
+Logout
 ```
 
 ### 4.3 Contextual Navigation
 
-| Konteks | Aksi yang Muncul |
+| Konteks | Aksi Kontekstual |
 |---|---|
-| Setelah siswa mengirim laporan | Simpan kode laporan, cek status laporan, kembali ke beranda |
-| Saat siswa membuka detail status | Lihat riwayat status, kembali ke riwayat laporan, hubungi Guru BK |
-| Saat Guru BK membuka detail laporan | Validasi laporan, periksa bukti, update status, buat jadwal mediasi |
-| Saat Guru BK membuka menu mediasi | Tambah jadwal, ubah jadwal, tentukan peserta, catat hasil |
-| Saat Guru BK membuka tindak lanjut | Tambah catatan pembinaan, buat rekomendasi, selesaikan kasus |
-| Saat orang tua membuka jadwal mediasi | Konfirmasi hadir, tidak hadir, ajukan perubahan jadwal |
-| Saat kepala sekolah membuka grafik | Filter periode, lihat detail rekap, export laporan |
+| Siswa: setelah kirim laporan | Simpan kode laporan, lihat status, kembali beranda |
+| Siswa: detail laporan | Lihat riwayat status (timeline), hubungi Guru BK |
+| Guru BK: detail laporan | Validasi, periksa bukti, update status, jadwal mediasi, tindak lanjut |
+| Guru BK: selesai validasi | Buat jadwal mediasi (jika valid), arsip (jika ditolak) |
+| Orang tua: notif mediasi | Buka jadwal, konfirmasi kehadiran |
+| Kepsek: buka grafik | Filter periode, lihat detail rekap, export |
 
 ---
 
-## 5. User Flow
+## 5. API Endpoint Mapping per Screen
 
-### 5.1 Siswa — Membuat Laporan
+### 5.1 Auth
 
-```
-Login / Akses Publik
-        ↓
-Pilih "Buat Laporan"
-        ↓
-Isi Form Data Kejadian
-(Jenis, Tanggal, Waktu, Lokasi, Pihak, Kronologi)
-        ↓
-Pilih Identitas Pelapor
-┌───────────┬─────────────┐
-│ Dengan    │   Anonim    │
-│ Identitas │             │
-└─────┬─────┴──────┬──────┘
-      │            │
-  Isi Nama,    Lanjut tanpa
-  Kelas, Kontak identitas
-      └────────────┘
-              ↓
-     Upload Bukti (opsional)
-              ↓
-       Review Laporan
-              ↓
-      Kirim Laporan
-              ↓
-  Sistem simpan + generate Kode Laporan
-              ↓
-    Tampilkan Kode Laporan
-              ↓
-  Laporan masuk ke Dashboard Guru BK
-```
-
-### 5.2 Siswa — Mengecek Status Laporan
-
-```
-Login → Dashboard Siswa
-        ↓
-   Riwayat Laporan
-        ↓
-  Pilih Satu Laporan
-        ↓
-  Detail Status Laporan
-  - Informasi Laporan
-  - Status Penanganan
-  - Catatan Perkembangan
-  - Riwayat Perubahan Status
-```
-
-### 5.3 Guru BK — Menangani Laporan
-
-```
-Login → Dashboard Utama Guru BK
-              ↓
-    Manajemen Laporan → Daftar Laporan Masuk
-              ↓
-       Buka Detail Laporan
-    (Data Kejadian, Kronologi, Pihak, Saksi)
-              ↓
-       Pemeriksaan Bukti
-              ↓
-       Validasi Laporan
-       ┌──────┴──────┐
-      Valid        Ditolak
-       ↓               ↓
-    Diproses     Catat alasan
-       ↓         Update status
-  Buat Jadwal Mediasi (jika perlu)
-       ↓
-  Tentukan Peserta Mediasi
-       ↓
-   Catat Hasil Mediasi
-       ↓
-  Tindak Lanjut / Pembinaan
-       ↓
-  Update Status → Selesai
-       ↓
-  Rekap / Arsip Kasus
-```
-
-### 5.4 Guru BK — Membuat Rekapitulasi
-
-```
-Login → Dashboard Guru BK
-        ↓
-  Laporan / Rekapitulasi
-        ↓
-  Pilih Periode (Harian / Mingguan / Bulanan)
-        ↓
-  Lihat Grafik Kasus
-  (Jenis, Status, Periode)
-        ↓
-  Export Laporan (PDF / Excel / Cetak)
-```
-
-### 5.5 Kepala Sekolah — Monitoring
-
-```
-Login → Dashboard Kepala Sekolah
-              ↓
-       Statistik Kasus
-    (Total, Baru, Diproses, Selesai, Ditolak)
-              ↓
-    Grafik Tren Perundungan
-    (Harian / Bulanan / Jenis / Penyelesaian)
-              ↓
-      Rekapitulasi Kasus
-    (Jenis, Kelas, Status, Periode)
-              ↓
-    Monitoring Penanganan
-    (Kasus Aktif, Progres, Perhatian, Evaluasi)
-              ↓
-     Laporan Kebijakan
-   (Ringkasan, Analisis, Rekomendasi, Keputusan)
-```
-
-### 5.6 Orang Tua/Wali — Mengikuti Proses Mediasi
-
-```
-Login → Dashboard Orang Tua/Wali
-              ↓
-         Notifikasi
-      (Anak terlibat kasus)
-              ↓
-    Buka Detail Informasi Anak
-    (Data, Status Keterlibatan, Ringkasan)
-              ↓
-       Jadwal Mediasi
-    (Tanggal, Waktu, Tempat, Agenda)
-              ↓
-    Konfirmasi Kehadiran
-    ┌─────┬────────┬──────────────┐
-    │Hadir│Tdk Hadir│Ajukan Ubah  │
-    └──┬──┴────┬───┴─────────┬───┘
-       └───────┴─────────────┘
-              ↓
-       Ikuti Mediasi
-              ↓
-     Hasil Tindak Lanjut
-    (Ringkasan, Rekomendasi, Status Selesai)
-```
-
-### 5.7 Admin — Mengelola Akun
-
-```
-Login → Pengaturan
-        ↓
-   Profil Pengguna
-   (Lihat & kelola data akun)
-        ↓
-     Hak Akses
-   (Atur role: Siswa, Guru BK, Kepala Sekolah, Orang Tua)
-        ↓
-   Keamanan Akun
-   (Password, verifikasi, privasi)
-        ↓
-   Simpan Perubahan
-        ↓
-   Sistem update data & hak akses
-```
-
----
-
-## 6. Alur Status Laporan
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    ALUR STATUS LAPORAN                      │
-│                                                             │
-│  [Laporan Dibuat]                                           │
-│        ↓                                                    │
-│  [Laporan Masuk]   ← sistem generate kode laporan          │
-│        ↓                                                    │
-│  [Menunggu Validasi]   ← Guru BK memeriksa                 │
-│        ↓                                                    │
-│   ┌────┴──────┐                                             │
-│  [Valid]   [Ditolak]                                        │
-│    ↓                                                        │
-│  [Diproses]   ← Guru BK mulai menangani                    │
-│    ↓                                                        │
-│  [Mediasi]   ← pertemuan pihak terkait                     │
-│    ↓                                                        │
-│  [Tindak Lanjut]   ← pembinaan & pemantauan               │
-│    ↓                                                        │
-│  [Selesai]   ← diarsipkan                                  │
-└─────────────────────────────────────────────────────────────┘
-```
-
-| Status | Aktor | Aksi |
+| Screen | Method | Endpoint |
 |---|---|---|
-| Laporan Dibuat | Siswa | Mengisi form, memilih identitas, upload bukti |
-| Laporan Masuk | Sistem | Menyimpan data, generate kode laporan |
-| Menunggu Validasi | Guru BK | Memeriksa kelengkapan data dan bukti |
-| Valid | Guru BK | Laporan disetujui untuk diproses |
-| Ditolak | Guru BK | Laporan tidak memenuhi ketentuan |
-| Diproses | Guru BK | Penanganan aktif dimulai |
-| Mediasi | Guru BK + Pihak Terkait | Pertemuan mediasi dilaksanakan |
-| Tindak Lanjut | Guru BK | Pembinaan, sanksi, pemantauan |
-| Selesai | Guru BK | Kasus diarsipkan |
+| Login | POST | `/api/login` |
+| Register | POST | `/api/register` *(tambah)* |
+| Verify OTP | POST | `/api/verify-otp` *(tambah)* |
+| Resend OTP | POST | `/api/resend-otp` *(tambah)* |
+| Logout | POST | `/api/logout` |
 
----
+### 5.2 Siswa
 
-## 7. Content Inventory
-
-| Halaman / Menu | Informasi yang Ditampilkan | Aksi Pengguna |
+| Screen | Method | Endpoint |
 |---|---|---|
-| Beranda | Deskripsi, tujuan, manfaat, alur, akses cepat | Membuka laporan / cek status |
-| Edukasi Anti Perundungan | Pengertian, jenis, dampak, cara melapor | Membaca konten edukasi |
-| Buat Laporan | Form kejadian, identitas, upload bukti, review | Mengisi, memilih, mengunggah, mengirim |
-| Konfirmasi Pengiriman | Pesan berhasil, kode laporan, instruksi | Menyimpan kode laporan |
-| Cek Status Laporan | Input kode, status, tahap, catatan, riwayat | Memantau perkembangan |
-| Dashboard Utama Siswa | Ringkasan: dibuat, diproses, selesai | Memilih laporan |
-| Riwayat Laporan | Daftar laporan: kode, tanggal, status | Membuka detail laporan |
-| Detail Status Laporan | Info laporan, status, catatan, riwayat | Memantau status |
-| Dashboard Utama Guru BK | Total, menunggu, valid, diproses, mediasi, selesai | Memantau dan memilih laporan |
-| Manajemen Laporan | Daftar, detail, validasi, bukti, update status | Memproses laporan |
-| Mediasi | Jadwal, peserta, agenda, hasil | Membuat jadwal, mencatat hasil |
-| Tindak Lanjut | Catatan, rekomendasi, sanksi, pemantauan | Mencatat dan menyelesaikan kasus |
-| Riwayat Perilaku Siswa | Data siswa, riwayat kasus, catatan BK | Melihat riwayat perilaku |
-| Laporan / Rekapitulasi | Rekap harian/mingguan/bulanan, grafik, export | Membuat laporan, mengunduh data |
-| Dashboard Kepala Sekolah | Statistik, grafik tren, rekap, monitoring, kebijakan | Monitoring dan pengambilan keputusan |
-| Dashboard Orang Tua/Wali | Notifikasi, info anak, jadwal mediasi, konfirmasi, hasil | Memantau dan mengonfirmasi kehadiran |
-| Pengaturan | Profil, hak akses, keamanan, logout | Mengelola akun |
+| Beranda (stats) | GET | `/api/dashboard/statistics` |
+| Buat Laporan | POST | `/api/reports` |
+| Daftar Laporan | GET | `/api/reports` |
+| Detail Laporan | GET | `/api/reports/{id}` |
+| Cek Status Publik | GET | `/api/reports/check?code=SPK-...` *(tambah)* |
+| Notifikasi | GET | `/api/notifications` |
+| Unread Count | GET | `/api/notifications/unread-count` |
+| Tandai Dibaca | PUT | `/api/notifications/{id}/read` |
+| Profil | GET | `/api/profile` |
+| Edit Profil | PUT | `/api/profile` |
+| Ubah Password | PUT | `/api/profile/password` |
+| Simpan FCM Token | POST | `/api/profile/fcm-token` |
+
+### 5.3 Guru BK
+
+| Screen | Method | Endpoint |
+|---|---|---|
+| Dashboard (stats) | GET | `/api/dashboard/statistics` |
+| Semua Laporan | GET | `/api/reports` |
+| Detail Laporan | GET | `/api/reports/{id}` |
+| Update Status | PUT | `/api/reports/{id}/status` |
+| Validasi Laporan | POST | `/api/reports/{report}/validations` |
+| Daftar Validasi | GET | `/api/reports/{report}/validations` |
+| Buat Mediasi | POST | `/api/reports/{report}/mediations` |
+| Daftar Mediasi | GET | `/api/reports/{report}/mediations` *(tambah)* |
+| Detail Mediasi | GET | `/api/mediations/{id}` *(tambah)* |
+| Update Status Mediasi | PUT | `/api/mediations/{id}/status` *(tambah)* |
+| Catat Tindak Lanjut | POST | `/api/reports/{report}/follow-ups` |
+| Daftar Tindak Lanjut | GET | `/api/reports/{report}/follow-ups` *(tambah)* |
+| Export Rekap | GET | `/api/reports/export?format=pdf` *(tambah)* |
+| Tren Dashboard | GET | `/api/dashboard/trend` *(tambah)* |
+
+### 5.4 Kepala Sekolah
+
+| Screen | Method | Endpoint |
+|---|---|---|
+| Dashboard (stats) | GET | `/api/dashboard/statistics` |
+| Tren Grafik | GET | `/api/dashboard/trend` *(tambah)* |
+| Semua Laporan (read) | GET | `/api/reports` |
+| Export Rekap | GET | `/api/reports/export` *(tambah)* |
+
+### 5.5 Orang Tua/Wali
+
+| Screen | Method | Endpoint |
+|---|---|---|
+| Dashboard (stats anak) | GET | `/api/dashboard/statistics` |
+| Laporan Anak | GET | `/api/reports` (filter by children) |
+| Detail Laporan | GET | `/api/reports/{id}` |
+| Jadwal Mediasi | GET | `/api/reports/{report}/mediations` *(tambah)* |
+| Konfirmasi Kehadiran | PUT | `/api/mediations/{id}/participants/{userId}/confirm` *(tambah)* |
+| Notifikasi | GET | `/api/notifications` |
+
+### 5.6 Admin
+
+| Screen | Method | Endpoint |
+|---|---|---|
+| Audit Log | GET | `/api/audit-logs` |
+| Detail Audit Log | GET | `/api/audit-logs/{id}` |
+| Daftar User | GET | `/api/admin/users` *(tambah)* |
+| Tambah User | POST | `/api/admin/users` *(tambah)* |
+| Edit User | PUT | `/api/admin/users/{id}` *(tambah)* |
+| Hapus User | DELETE | `/api/admin/users/{id}` *(tambah)* |
+| Assign Role | PUT | `/api/admin/users/{id}/role` *(tambah)* |
+| Hubungkan Ortu-Anak | POST | `/api/admin/parent-child` *(tambah)* |
 
 ---
 
-## 8. Rekomendasi Struktur Wireframe
+## 6. User Flow Lengkap
 
-### 8.1 Halaman Publik
+### 6.1 Auth — Registrasi + OTP
+
 ```
-HEADER
-└── Logo SpeakUp | Menu: Beranda | Edukasi | Buat Laporan | Cek Status | Login
-
-HERO SECTION
-└── Judul + deskripsi singkat
-└── [Tombol: Buat Laporan] [Tombol: Cek Status]
-
-SECTION: Informasi Sistem
-└── Deskripsi | Tujuan | Manfaat
-
-SECTION: Alur Penggunaan
-└── Step 1 → Step 2 → Step 3 → Step 4 (visual timeline)
-
-SECTION: Edukasi Singkat
-└── Jenis Perundungan (card)
-
-SECTION: Kontak
-└── Kontak Guru BK | Kontak Sekolah
-
-FOOTER
-```
-
-### 8.2 Form Buat Laporan
-```
-HEADER
-JUDUL: Form Pelaporan Kasus Perundungan
-
-INFO BANNER: "Identitas Anda dapat dirahasiakan"
-
-FORM DATA KEJADIAN
-└── Jenis Perundungan (dropdown)
-└── Tanggal & Waktu Kejadian
-└── Lokasi Kejadian
-└── Pihak yang Terlibat
-└── Kronologi (textarea)
-
-PILIHAN IDENTITAS
-└── (○) Lapor dengan Identitas  (○) Lapor Anonim
-
-UPLOAD BUKTI
-└── Drop zone + keterangan
-
-REVIEW
-└── Ringkasan data sebelum kirim
-
-AKSI: [Kembali] [Kirim Laporan]
+Buka App
+    ↓
+Screen Login
+    ↓ tap "Daftar"
+Screen Daftar
+  Isi: nama, email, password, phone, role
+    ↓ tap "Daftar"
+  API: POST /api/register
+    ↓ (email OTP terkirim)
+Screen Verifikasi OTP
+  Input 6 digit kode
+    ↓
+  [Benar]                [Salah]
+     ↓                      ↓
+Screen Verifikasi      State error merah
+Berhasil               "Kode Verifikasi Salah"
+     ↓                 Coba ulang / Kirim ulang
+  tap "Mulai"
+     ↓
+Screen Login → masuk Dashboard
 ```
 
-### 8.3 Dashboard Siswa
-```
-SIDEBAR: Dashboard | Buat Laporan | Riwayat | Bantuan | Pengaturan | Logout
+### 6.2 Siswa — Buat Laporan
 
-MAIN CONTENT:
-├── Kartu Statistik: [Dibuat] [Diproses] [Selesai]
-└── Tabel Riwayat: Kode | Tanggal | Jenis | Status | Aksi
 ```
-
-### 8.4 Dashboard Guru BK
-```
-SIDEBAR: Dashboard | Manajemen Laporan | Mediasi | Tindak Lanjut | Riwayat | Rekap | Pengaturan | Logout
-
-MAIN CONTENT:
-├── Kartu Statistik: [Total] [Menunggu] [Valid] [Diproses] [Mediasi] [Selesai]
-└── Tabel Laporan: Kode | Tanggal | Jenis | Status | [Lihat] [Validasi] [Update]
-```
-
-### 8.5 Dashboard Kepala Sekolah
-```
-SIDEBAR: Statistik | Grafik | Rekapitulasi | Monitoring | Kebijakan | Pengaturan | Logout
-
-MAIN CONTENT:
-├── Kartu Statistik: [Total] [Baru] [Diproses] [Selesai] [Ditolak]
-├── Grafik Tren (line chart / bar chart)
-└── Tabel Monitoring: Kode | Status | Progres | Catatan
+Beranda Siswa
+    ↓ tap "Buat Laporan Baru"
+Step 1: Data Kejadian
+  Pilih jenis, isi judul, tanggal, lokasi, kronologi, pihak terlibat
+    ↓ tap "Lanjut"
+Step 2: Bukti & Identitas
+  Upload bukti (opsional)
+  Pilih: dengan identitas / anonim
+    ↓ tap "Lanjut"
+Step 3: Review
+  Cek semua data
+    ↓ tap "Kirim Laporan"
+  API: POST /api/reports
+    ↓
+Konfirmasi: tampil kode SPK-YYYY-NNNNN
+    ↓
+Laporan masuk ke antrian Guru BK
 ```
 
-### 8.6 Dashboard Orang Tua/Wali
-```
-SIDEBAR: Notifikasi | Info Anak | Jadwal Mediasi | Konfirmasi | Hasil | Pengaturan | Logout
+### 6.3 Guru BK — Validasi & Proses Laporan
 
-MAIN CONTENT:
-├── Notifikasi (banner / list)
-├── Info Anak: Nama | Kelas | Status Keterlibatan
-├── Jadwal Mediasi: Tanggal | Waktu | Tempat | Agenda
-└── Aksi: [Hadir] [Tidak Hadir] [Ajukan Perubahan]
 ```
+Dashboard Guru BK
+    ↓ lihat "Menunggu Validasi"
+Manajemen Laporan → filter "Menunggu Validasi"
+    ↓ tap laporan
+Detail Laporan
+  Baca kronologi, periksa pihak terlibat
+    ↓ tap "Periksa Bukti"
+  Preview foto/video/dokumen
+    ↓ tap "Validasi"
+  Pilih: Valid / Tolak + catatan
+  API: POST /api/reports/{report}/validations
+    ↓
+  [Valid]                      [Tolak]
+     ↓                            ↓
+  Status → processing         Status → rejected
+  Notifikasi → pelapor        Notifikasi → pelapor
+     ↓
+  Update Status → "Diproses"
+  API: PUT /api/reports/{id}/status
+     ↓
+  Jadwal Mediasi (jika perlu)
+  API: POST /api/reports/{report}/mediations
+  FCM push → orang tua/wali
+     ↓
+  Setelah mediasi selesai → Tindak Lanjut
+  API: POST /api/reports/{report}/follow-ups
+     ↓
+  Update Status → completed
+  Notifikasi final → pelapor
+```
+
+### 6.4 Orang Tua — Konfirmasi Mediasi
+
+```
+Terima FCM Push: "Mediasi Dijadwalkan"
+    ↓ tap notif
+Dashboard Orang Tua
+    ↓
+Notifikasi → Jadwal Mediasi
+    ↓
+Detail Mediasi: tanggal, lokasi, agenda
+    ↓
+Konfirmasi Kehadiran
+  API: PUT /api/mediations/{id}/participants/{userId}/confirm
+  ├── Hadir → status confirmed
+  ├── Tidak Hadir → status declined
+  └── Ajukan Perubahan → notif ke Guru BK
+```
+
+### 6.5 Kepala Sekolah — Monitoring
+
+```
+Login → Dashboard Kepsek
+    ↓
+Stat Cards: Total / Baru / Diproses / Selesai
+API: GET /api/dashboard/statistics
+    ↓
+Grafik Donut per Kategori
+Grafik Tren Bulanan
+API: GET /api/dashboard/trend
+    ↓
+Rekapitulasi Kasus (filter periode/kelas)
+API: GET /api/reports + filter
+    ↓
+Export Laporan
+API: GET /api/reports/export?format=pdf
+```
+
+---
+
+## 7. Data Model Summary
+
+```
+users
+  id, name, email, password, phone, avatar, fcm_token
+  roles: [siswa | guru_bk | kepsek | ortu | admin]
+
+parent_child (pivot)
+  parent_id → users.id
+  child_id  → users.id
+
+reports
+  id, report_code (SPK-YYYY-NNNNN)
+  reporter_id → users.id
+  title, description, category
+  incident_location, incident_date
+  status: [draft|submitted|waiting_validation|valid|processing
+           |mediation|follow_up|completed|rejected]
+  is_anonymous (boolean)
+
+report_participants
+  report_id, role (korban|terlapor|saksi)
+  user_id (nullable), name, class_name, notes
+
+evidences
+  report_id, file_path, file_type, original_name
+
+validations
+  report_id, validator_id → users.id
+  status (valid|rejected), notes
+
+mediations
+  report_id, mediator_id → users.id
+  schedule_date, location
+  status (scheduled|ongoing|completed|cancelled)
+  result
+
+mediation_participants
+  mediation_id, user_id → users.id
+  status (pending|confirmed|declined)
+
+follow_ups
+  report_id, executor_id → users.id
+  action_taken, follow_up_date, notes
+
+report_status_histories
+  report_id, user_id → users.id
+  status, notes, created_at
+
+notifications
+  user_id, title, body, type, reference_id, is_read
+
+audit_logs
+  user_id, action, model_type, model_id, changes (JSON), ip_address
+```
+
+---
+
+## 8. Hak Akses Ringkas
+
+| Fitur | Siswa | Guru BK | Kepsek | Ortu | Admin |
+|---|---|---|---|---|---|
+| Buat Laporan | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Laporan Anonim | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Lihat Laporan Sendiri | ✅ | — | — | — | — |
+| Lihat Semua Laporan | ❌ | ✅ | ✅* | ❌ | ✅ |
+| Lihat Laporan Anak | — | — | — | ✅ | — |
+| Validasi Laporan | ❌ | ✅ | ❌ | ❌ | ✅ |
+| Update Status | ❌ | ✅ | ❌ | ❌ | ✅ |
+| Buat Mediasi | ❌ | ✅ | ❌ | ❌ | ✅ |
+| Konfirmasi Kehadiran | ❌ | ❌ | ❌ | ✅ | ❌ |
+| Catat Tindak Lanjut | ❌ | ✅ | ❌ | ❌ | ✅ |
+| Lihat Statistik Global | ❌ | ✅ | ✅ | ❌ | ✅ |
+| Export Rekap | ❌ | ✅ | ✅ | ❌ | ✅ |
+| Lihat Audit Log | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Manajemen Pengguna | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Notifikasi Push (FCM) | ✅ | ✅ | ❌ | ✅ | ❌ |
+
+> *Kepsek: read-only, tidak bisa edit atau mengubah status laporan
 
 ---
 
@@ -725,12 +647,13 @@ MAIN CONTENT:
 
 | Prinsip | Implementasi |
 |---|---|
-| **User-Centered** | Setiap dashboard disesuaikan dengan kebutuhan dan peran masing-masing pengguna |
-| **Keamanan & Privasi** | Hak akses ketat; laporan anonim tidak menyimpan identitas pelapor |
-| **Efisiensi Navigasi** | Menu disusun berdasarkan frekuensi dan urgensi penggunaan |
-| **Transparansi** | Siswa dapat memantau status laporan secara real-time tanpa harus bertanya langsung |
-| **Skalabilitas** | Struktur mendukung penambahan fitur: notifikasi WhatsApp/email, filter lanjutan, role permission detail |
-| **Kejelasan Hierarki** | Informasi disusun dari yang paling umum (beranda) ke yang paling spesifik (detail laporan) |
+| **Mobile-First** | Desain utama untuk smartphone, web sebagai perluasan |
+| **Role-Driven** | Setiap role punya navigasi, endpoint, dan data yang berbeda |
+| **Privacy by Design** | Anonim → `reporter_id` disembunyikan; ortu hanya lihat anak sendiri |
+| **Real-time Feedback** | FCM push + in-app notification untuk setiap event penting |
+| **Progressive Disclosure** | Multi-step form pelaporan mengurangi cognitive load siswa |
+| **Audit Trail** | Semua aksi penting tercatat di `audit_logs` |
+| **Scalable API** | Satu backend Laravel melayani mobile dan web |
 
 ---
 

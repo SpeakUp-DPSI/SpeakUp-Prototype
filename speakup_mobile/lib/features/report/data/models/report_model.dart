@@ -125,7 +125,7 @@ class ReportModel {
       reportedId: reportedId ?? this.reportedId,
       participants: participants ?? this.participants,
       reporter: reporter ?? this.reporter,
-      statusHistories: statusHistories ?? this.statusHistories,
+      statusHistories: statusHistories ?? statusHistories,
     );
   }
 }

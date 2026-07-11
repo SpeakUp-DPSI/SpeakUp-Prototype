@@ -96,7 +96,7 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               itemCount: _statusFilters.length,
-              separatorBuilder: (_, _a) => const SizedBox(width: 8),
+              separatorBuilder: (_, a) => const SizedBox(width: 8),
               itemBuilder: (context, i) {
                 final f = _statusFilters[i];
                 final activeFirst = i == 0 && _selectedStatus == '';

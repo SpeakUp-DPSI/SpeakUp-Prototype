@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:responsive_framework/responsive_framework.dart';
 import '../../../../core/theme/app_theme.dart';
 import 'package:go_router/go_router.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
@@ -23,6 +24,7 @@ class _PrincipalDashboardScreenState
     final authState = ref.watch(authProvider);
     final statsAsync = ref.watch(dashboardStatsProvider);
     final reportsAsync = ref.watch(reportsListProvider);
+    final isDesktop = ResponsiveBreakpoints.of(context).largerOrEqualTo(DESKTOP);
 
     String userName = 'Pak Kepala';
     if (authState is AuthSuccess) {
@@ -39,100 +41,21 @@ class _PrincipalDashboardScreenState
           },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ─── Hero Header (full-bleed illustration) ──────────────
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  child: _buildHeroHeader(userName),
-                ),
+            child: Padding(
+              padding: EdgeInsets.all(isDesktop ? 32 : 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ─── Hero Header ──────────────────────────────────────
+                  _buildHeroHeader(userName),
+                  const SizedBox(height: 16),
 
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // ─── Date Filter ──────────────────────────────────
-                      _buildDateFilter(),
-                      const SizedBox(height: 16),
-
-                      // ─── Stat Cards ───────────────────────────────────
-                      statsAsync.when(
-                        loading: () => _buildStatCards(0, 0, 0, 0, 0),
-                        error: (e, _) => _buildStatCards(0, 0, 0, 0, 0),
-                        data: (stats) => _buildStatCards(
-                          stats.total,
-                          stats.today,
-                          stats.total - stats.completed - stats.mediation,
-                          stats.completed,
-                          0,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // ─── Tingkat Penyelesaian ─────────────────────────
-                      statsAsync.when(
-                        loading: () => _buildCompletionCard(0, 0),
-                        error: (e, _) => _buildCompletionCard(0, 0),
-                        data: (stats) =>
-                            _buildCompletionCard(stats.completed, stats.total),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // ─── Kasus Butuh Perhatian ────────────────────────
-                      const Text(
-                        'Kasus yang membutuhkan perhatian',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                            color: Color(0xFFD4371C)),
-                      ),
-                      const SizedBox(height: 10),
-                      reportsAsync.when(
-                        loading: () => const Center(
-                            child: CircularProgressIndicator()),
-                        error: (e, _) => const SizedBox.shrink(),
-                        data: (reports) {
-                          final urgent = reports
-                              .where((r) =>
-                                  r.status == 'waiting_validation' ||
-                                  r.status == 'processing')
-                              .take(3)
-                              .toList();
-                          if (urgent.isEmpty) {
-                            return Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  'Tidak ada kasus mendesak saat ini.',
-                                  style: TextStyle(
-                                      color: AppTheme.neutral400,
-                                      fontSize: 13),
-                                ),
-                              ),
-                            );
-                          }
-                          return Column(
-                            children: urgent
-                                .map((r) => _buildUrgentCard(r, context))
-                                .toList(),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 16),
-
-                      // ─── Quick Actions ────────────────────────────────
-                      _buildQuickActions(context),
-                      const SizedBox(height: 24),
-                    ],
-                  ),
-                ),
-              ],
+                  if (isDesktop)
+                    _buildDesktopContent(statsAsync, reportsAsync, context)
+                  else
+                    _buildMobileContent(statsAsync, reportsAsync, context),
+                ],
+              ),
             ),
           ),
         ),
@@ -140,8 +63,327 @@ class _PrincipalDashboardScreenState
     );
   }
 
+  // ─── Desktop Content ─────────────────────────────────────────────────
+  Widget _buildDesktopContent(AsyncValue statsAsync, AsyncValue reportsAsync, BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ─── Date Filter + Stats Row ─────────────
+        Row(
+          children: [
+            _buildDateFilter(),
+            const Spacer(),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // Stat Cards — 5 in a row on desktop
+        statsAsync.when(
+          loading: () => _buildStatCardsDesktop(0, 0, 0, 0, 0),
+          error: (e, _) => _buildStatCardsDesktop(0, 0, 0, 0, 0),
+          data: (stats) => _buildStatCardsDesktop(
+            stats.total,
+            stats.today,
+            stats.total - stats.completed - stats.mediation,
+            stats.completed,
+            0,
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // ─── Two-column: Completion + Urgent Cases + Quick Actions ─────
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Main content
+            Expanded(
+              flex: 3,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Completion rate
+                  statsAsync.when(
+                    loading: () => _buildCompletionCard(0, 0),
+                    error: (e, _) => _buildCompletionCard(0, 0),
+                    data: (stats) => _buildCompletionCard(stats.completed, stats.total),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Kasus Butuh Perhatian
+                  const Text(
+                    'Kasus yang membutuhkan perhatian',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFFD4371C)),
+                  ),
+                  const SizedBox(height: 12),
+                  reportsAsync.when(
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (e, _) => const SizedBox.shrink(),
+                    data: (reports) {
+                      final urgent = reports
+                          .where((r) => r.status == 'waiting_validation' || r.status == 'processing')
+                          .take(5)
+                          .toList();
+                      if (urgent.isEmpty) {
+                        return Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: AppTheme.neutral100),
+                          ),
+                          child: const Center(
+                            child: Text('Tidak ada kasus mendesak saat ini.',
+                              style: TextStyle(color: AppTheme.neutral400, fontSize: 13)),
+                          ),
+                        );
+                      }
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: AppTheme.neutral100),
+                        ),
+                        child: Column(
+                          children: [
+                            // Table header
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: AppTheme.neutral50,
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(14),
+                                  topRight: Radius.circular(14),
+                                ),
+                              ),
+                              child: const Row(
+                                children: [
+                                  SizedBox(width: 44 + 12),
+                                  Expanded(flex: 2, child: Text('Kode', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.neutral500))),
+                                  Expanded(flex: 3, child: Text('Judul Kasus', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.neutral500))),
+                                  Expanded(flex: 2, child: Text('Tanggal', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.neutral500))),
+                                  SizedBox(width: 80, child: Text('Status', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.neutral500))),
+                                ],
+                              ),
+                            ),
+                            ...urgent.map((r) {
+                              final isBaru = r.status == 'waiting_validation';
+                              return InkWell(
+                                onTap: () => context.push('/report/${r.id}'),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  decoration: const BoxDecoration(
+                                    border: Border(bottom: BorderSide(color: AppTheme.neutral100)),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 44, height: 44,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFFFF0E6),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: const Icon(Icons.warning_amber_rounded, color: Color(0xFFD4371C), size: 24),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(flex: 2, child: Text(r.reportCode, style: const TextStyle(fontSize: 13, color: AppTheme.neutral500))),
+                                      Expanded(flex: 3, child: Text(r.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.neutral900), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                                      Expanded(flex: 2, child: Text(r.incidentDate ?? '-', style: const TextStyle(fontSize: 12, color: AppTheme.neutral400))),
+                                      SizedBox(
+                                        width: 80,
+                                        child: Center(
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                                            decoration: BoxDecoration(
+                                              color: isBaru ? const Color(0xFFE87C1E) : AppTheme.primary600,
+                                              borderRadius: BorderRadius.circular(20),
+                                            ),
+                                            child: Text(isBaru ? 'Baru' : 'Proses', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 24),
+            // Sidebar — Quick Actions
+            Expanded(
+              flex: 2,
+              child: Column(
+                children: [
+                  // Quick Actions
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppTheme.neutral100),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Aksi Cepat', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.neutral900)),
+                        const SizedBox(height: 16),
+                        _quickActionRow(context, Icons.edit_document, 'Buat Laporan', '/report/create'),
+                        const SizedBox(height: 10),
+                        _quickActionRow(context, Icons.monitor_heart_outlined, 'Monitoring Kasus', '/principal/monitoring'),
+                        const SizedBox(height: 10),
+                        _quickActionRow(context, Icons.bar_chart_rounded, 'Rekapitulasi', '/principal/recap'),
+                        const SizedBox(height: 10),
+                        _quickActionRow(context, Icons.menu_book_outlined, 'Edukasi & Pencegahan', '/reports'),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Summary Card
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0D2149),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.insights, color: Colors.white70, size: 20),
+                            SizedBox(width: 8),
+                            Text('Insight', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Tingkat penyelesaian kasus bulan ini meningkat. Terus pantau kasus yang membutuhkan perhatian segera.',
+                          style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.75), height: 1.5),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  Widget _quickActionRow(BuildContext context, IconData icon, String label, String route) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () {
+        if (route == '/reports' || route == '/notifications' || route == '/mediations') {
+          context.go(route);
+        } else {
+          context.push(route);
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppTheme.neutral50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppTheme.neutral100),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: AppTheme.primary600, size: 20),
+            const SizedBox(width: 12),
+            Expanded(child: Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppTheme.neutral700))),
+            const Icon(Icons.chevron_right, size: 18, color: AppTheme.neutral400),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatCardsDesktop(int total, int baru, int diproses, int selesai, int ditolak) {
+    return Row(
+      children: [
+        Expanded(child: _statCard(icon: Icons.folder_copy_outlined, count: '$total', label: 'Total Kasus', bgColor: const Color(0xFF0D2149), textColor: Colors.white)),
+        const SizedBox(width: 12),
+        Expanded(child: _statCard(icon: Icons.access_time_outlined, count: '$baru', label: 'Kasus Baru', bgColor: const Color(0xFF1A5EB8), textColor: Colors.white)),
+        const SizedBox(width: 12),
+        Expanded(child: _statCard(icon: Icons.sync, count: '$diproses', label: 'Diproses', bgColor: const Color(0xFFE87C1E), textColor: Colors.white)),
+        const SizedBox(width: 12),
+        Expanded(child: _statCard(icon: Icons.verified_outlined, count: '$selesai', label: 'Selesai', bgColor: const Color(0xFF0E9E82), textColor: Colors.white)),
+        const SizedBox(width: 12),
+        Expanded(child: _statCard(icon: Icons.cancel_outlined, count: '$ditolak', label: 'Ditolak', bgColor: const Color(0xFF8B2424), textColor: Colors.white)),
+      ],
+    );
+  }
+
+  // ─── Mobile Content ──────────────────────────────────────────────────
+  Widget _buildMobileContent(AsyncValue statsAsync, AsyncValue reportsAsync, BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ─── Date Filter ──────────────────────────────────
+        _buildDateFilter(),
+        const SizedBox(height: 16),
+
+        // ─── Stat Cards ───────────────────────────────────
+        statsAsync.when(
+          loading: () => _buildStatCards(0, 0, 0, 0, 0),
+          error: (e, _) => _buildStatCards(0, 0, 0, 0, 0),
+          data: (stats) => _buildStatCards(
+            stats.total, stats.today,
+            stats.total - stats.completed - stats.mediation,
+            stats.completed, 0,
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // ─── Tingkat Penyelesaian ─────────────────────────
+        statsAsync.when(
+          loading: () => _buildCompletionCard(0, 0),
+          error: (e, _) => _buildCompletionCard(0, 0),
+          data: (stats) => _buildCompletionCard(stats.completed, stats.total),
+        ),
+        const SizedBox(height: 16),
+
+        // ─── Kasus Butuh Perhatian ────────────────────────
+        const Text('Kasus yang membutuhkan perhatian',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFFD4371C))),
+        const SizedBox(height: 10),
+        reportsAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => const SizedBox.shrink(),
+          data: (reports) {
+            final urgent = reports
+                .where((r) => r.status == 'waiting_validation' || r.status == 'processing')
+                .take(3).toList();
+            if (urgent.isEmpty) {
+              return Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
+                child: const Center(child: Text('Tidak ada kasus mendesak saat ini.', style: TextStyle(color: AppTheme.neutral400, fontSize: 13))),
+              );
+            }
+            return Column(children: urgent.map((r) => _buildUrgentCard(r, context)).toList());
+          },
+        ),
+        const SizedBox(height: 16),
+
+        // ─── Quick Actions ────────────────────────────────
+        _buildQuickActions(context),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
   // ─── Hero Header ──────────────────────────────────────────────────────────
-  // Ilustrasi memenuhi seluruh kartu, teks di depan dengan gradient overlay
 
   Widget _buildHeroHeader(String userName) {
     return Container(
@@ -155,7 +397,6 @@ class _PrincipalDashboardScreenState
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Layer 1: Ilustrasi penuh seluruh kartu
           Image.asset(
             'assets/images/kepsek_illustration.png',
             fit: BoxFit.cover,
@@ -163,50 +404,24 @@ class _PrincipalDashboardScreenState
             errorBuilder: (ctx, e, s) => Container(
               color: const Color(0xFFE8EEF8),
               alignment: Alignment.centerRight,
-              child: const Icon(Icons.school_outlined,
-                  color: Colors.black12, size: 80),
+              child: const Icon(Icons.school_outlined, color: Colors.black12, size: 80),
             ),
           ),
-
-          // Layer 2: Teks di depan
           Positioned(
-            left: 20,
-            top: 0,
-            bottom: 0,
-            right: 140, // Memberi ruang agar teks tidak menabrak karakter di kanan
+            left: 20, top: 0, bottom: 0, right: 140,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text(
-                  'Selamat Pagi,',
-                  style: TextStyle(
-                    color: Color(0xFF0D2149),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                const Text('Selamat Pagi,',
+                  style: TextStyle(color: Color(0xFF0D2149), fontSize: 14, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 2),
-                Text(
-                  userName,
-                  style: const TextStyle(
-                    color: Color(0xFF0D2149),
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    height: 1.2,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                Text(userName,
+                  style: const TextStyle(color: Color(0xFF0D2149), fontSize: 22, fontWeight: FontWeight.bold, height: 1.2),
+                  maxLines: 2, overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 8),
-                const Text(
-                  'Berikut ringkasan penanganan\nkasus perundungan di sekolah Anda.',
-                  style: TextStyle(
-                    color: Color(0xFF1A3A7A),
-                    fontSize: 11,
-                    height: 1.5,
-                  ),
-                ),
+                const Text('Berikut ringkasan penanganan\nkasus perundungan di sekolah Anda.',
+                  style: TextStyle(color: Color(0xFF1A3A7A), fontSize: 11, height: 1.5)),
               ],
             ),
           ),
@@ -221,18 +436,12 @@ class _PrincipalDashboardScreenState
     return GestureDetector(
       onTap: () async {
         final picked = await showDateRangePicker(
-          context: context,
-          firstDate: DateTime(2024),
-          lastDate: DateTime(2027),
+          context: context, firstDate: DateTime(2024), lastDate: DateTime(2027),
         );
         if (picked != null) {
-          final months = [
-            'Jan','Feb','Mar','Apr','Mei','Jun',
-            'Jul','Agt','Sep','Okt','Nov','Des'
-          ];
+          final months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
           setState(() {
-            _dateRangeLabel =
-                '${picked.start.day} ${months[picked.start.month - 1]} - '
+            _dateRangeLabel = '${picked.start.day} ${months[picked.start.month - 1]} - '
                 '${picked.end.day} ${months[picked.end.month - 1]} ${picked.end.year}';
           });
         }
@@ -240,112 +449,53 @@ class _PrincipalDashboardScreenState
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          color: Colors.white, borderRadius: BorderRadius.circular(12),
           border: Border.all(color: AppTheme.neutral300),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.calendar_today_outlined,
-                size: 18, color: AppTheme.neutral500),
+            const Icon(Icons.calendar_today_outlined, size: 18, color: AppTheme.neutral500),
             const SizedBox(width: 8),
-            Text(
-              _dateRangeLabel,
-              style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                  color: AppTheme.neutral900),
-            ),
+            Text(_dateRangeLabel, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppTheme.neutral900)),
             const SizedBox(width: 6),
-            const Icon(Icons.keyboard_arrow_down_rounded,
-                size: 18, color: AppTheme.neutral500),
+            const Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: AppTheme.neutral500),
           ],
         ),
       ),
     );
   }
 
-  // ─── Stat Cards ──────────────────────────────────────────────────────────
+  // ─── Stat Cards (Mobile) ────────────────────────────────────────────────
 
-  Widget _buildStatCards(
-      int total, int baru, int diproses, int selesai, int ditolak) {
+  Widget _buildStatCards(int total, int baru, int diproses, int selesai, int ditolak) {
     return Column(
       children: [
         Row(
           children: [
-            Expanded(
-              child: _statCard(
-                icon: Icons.folder_copy_outlined,
-                count: '$total',
-                label: 'Total Kasus',
-                bgColor: const Color(0xFF0D2149),
-                textColor: Colors.white,
-              ),
-            ),
+            Expanded(child: _statCard(icon: Icons.folder_copy_outlined, count: '$total', label: 'Total Kasus', bgColor: const Color(0xFF0D2149), textColor: Colors.white)),
             const SizedBox(width: 10),
-            Expanded(
-              child: _statCard(
-                icon: Icons.access_time_outlined,
-                count: '$baru',
-                label: 'Kasus Baru',
-                bgColor: const Color(0xFF1A5EB8),
-                textColor: Colors.white,
-              ),
-            ),
+            Expanded(child: _statCard(icon: Icons.access_time_outlined, count: '$baru', label: 'Kasus Baru', bgColor: const Color(0xFF1A5EB8), textColor: Colors.white)),
             const SizedBox(width: 10),
-            Expanded(
-              child: _statCard(
-                icon: Icons.sync,
-                count: '$diproses',
-                label: 'Diproses',
-                bgColor: const Color(0xFFE87C1E),
-                textColor: Colors.white,
-              ),
-            ),
+            Expanded(child: _statCard(icon: Icons.sync, count: '$diproses', label: 'Diproses', bgColor: const Color(0xFFE87C1E), textColor: Colors.white)),
           ],
         ),
         const SizedBox(height: 10),
         Row(
           children: [
-            Expanded(
-              child: _statCard(
-                icon: Icons.verified_outlined,
-                count: '$selesai',
-                label: 'Selesai',
-                bgColor: const Color(0xFF0E9E82),
-                textColor: Colors.white,
-              ),
-            ),
+            Expanded(child: _statCard(icon: Icons.verified_outlined, count: '$selesai', label: 'Selesai', bgColor: const Color(0xFF0E9E82), textColor: Colors.white)),
             const SizedBox(width: 10),
-            Expanded(
-              child: _statCard(
-                icon: Icons.cancel_outlined,
-                count: '$ditolak',
-                label: 'Ditolak',
-                bgColor: const Color(0xFF8B2424),
-                textColor: Colors.white,
-              ),
-            ),
+            Expanded(child: _statCard(icon: Icons.cancel_outlined, count: '$ditolak', label: 'Ditolak', bgColor: const Color(0xFF8B2424), textColor: Colors.white)),
           ],
         ),
       ],
     );
   }
 
-  Widget _statCard({
-    required IconData icon,
-    required String count,
-    required String label,
-    required Color bgColor,
-    required Color textColor,
-  }) {
+  Widget _statCard({required IconData icon, required String count, required String label, required Color bgColor, required Color textColor}) {
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(16),
-      ),
+      decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(16)),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -355,20 +505,8 @@ class _PrincipalDashboardScreenState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  count,
-                  style: TextStyle(
-                      color: textColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 22),
-                ),
-                Text(
-                  label,
-                  style: TextStyle(
-                      color: textColor.withValues(alpha: 0.75),
-                      fontSize: 11),
-                  overflow: TextOverflow.ellipsis,
-                ),
+                Text(count, style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 22)),
+                Text(label, style: TextStyle(color: textColor.withValues(alpha: 0.75), fontSize: 11), overflow: TextOverflow.ellipsis),
               ],
             ),
           ),
@@ -388,11 +526,7 @@ class _PrincipalDashboardScreenState
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2)),
         ],
       ),
       child: Row(
@@ -401,34 +535,17 @@ class _PrincipalDashboardScreenState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Tingkat Penyelesaian',
-                  style: TextStyle(
-                      fontSize: 13,
-                      color: AppTheme.neutral600,
-                      fontWeight: FontWeight.w500),
-                ),
+                const Text('Tingkat Penyelesaian', style: TextStyle(fontSize: 13, color: AppTheme.neutral600, fontWeight: FontWeight.w500)),
                 const SizedBox(height: 6),
-                Text(
-                  '$pct%',
-                  style: const TextStyle(
-                      fontSize: 40,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A3A7A)),
-                ),
+                Text('$pct%', style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Color(0xFF1A3A7A))),
                 const SizedBox(height: 4),
-                Text(
-                  '$selesai dari $total Kasus Selesai',
-                  style: const TextStyle(
-                      fontSize: 12, color: AppTheme.neutral500),
-                ),
+                Text('$selesai dari $total Kasus Selesai', style: const TextStyle(fontSize: 12, color: AppTheme.neutral500)),
               ],
             ),
           ),
           const SizedBox(width: 16),
           SizedBox(
-            width: 80,
-            height: 80,
+            width: 80, height: 80,
             child: CustomPaint(
               painter: _PieChartPainter(
                 percentage: pct / 100,
@@ -454,26 +571,15 @@ class _PrincipalDashboardScreenState
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6, offset: const Offset(0, 2))],
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF0E6),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(Icons.warning_amber_rounded,
-                  color: Color(0xFFD4371C), size: 26),
+              width: 44, height: 44,
+              decoration: BoxDecoration(color: const Color(0xFFFFF0E6), borderRadius: BorderRadius.circular(12)),
+              child: const Icon(Icons.warning_amber_rounded, color: Color(0xFFD4371C), size: 26),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -482,52 +588,26 @@ class _PrincipalDashboardScreenState
                 children: [
                   Row(
                     children: [
-                      Text(
-                        report.reportCode,
-                        style: const TextStyle(
-                            fontSize: 12, color: AppTheme.neutral500),
-                      ),
+                      Text(report.reportCode, style: const TextStyle(fontSize: 12, color: AppTheme.neutral500)),
                       const Spacer(),
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 3),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                         decoration: BoxDecoration(
-                          color: isBaru
-                              ? const Color(0xFFE87C1E)
-                              : AppTheme.primary600,
+                          color: isBaru ? const Color(0xFFE87C1E) : AppTheme.primary600,
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: Text(
-                          isBaru ? 'Baru' : 'Proses',
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold),
-                        ),
+                        child: Text(isBaru ? 'Baru' : 'Proses', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
                       ),
                     ],
                   ),
                   const SizedBox(height: 3),
-                  Text(
-                    report.title,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                        color: AppTheme.neutral900),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  Text(report.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.neutral900), maxLines: 1, overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.calendar_today_outlined,
-                          size: 12, color: AppTheme.neutral400),
+                      const Icon(Icons.calendar_today_outlined, size: 12, color: AppTheme.neutral400),
                       const SizedBox(width: 4),
-                      Text(
-                        report.incidentDate ?? '-',
-                        style: const TextStyle(
-                            fontSize: 11, color: AppTheme.neutral400),
-                      ),
+                      Text(report.incidentDate ?? '-', style: const TextStyle(fontSize: 11, color: AppTheme.neutral400)),
                     ],
                   ),
                 ],
@@ -539,30 +619,14 @@ class _PrincipalDashboardScreenState
     );
   }
 
-  // ─── Quick Actions ───────────────────────────────────────────────────────
+  // ─── Quick Actions (Mobile) ───────────────────────────────────────────
 
   Widget _buildQuickActions(BuildContext context) {
     final actions = [
-      {
-        'icon': Icons.edit_document,
-        'label': 'Buat\nLaporan',
-        'route': '/report/create'
-      },
-      {
-        'icon': Icons.assignment_turned_in_outlined,
-        'label': 'Tindak\nLanjut',
-        'route': '/reports'
-      },
-      {
-        'icon': Icons.chat_bubble_outline,
-        'label': 'Komunikasi\nOrangtua',
-        'route': '/reports'
-      },
-      {
-        'icon': Icons.menu_book_outlined,
-        'label': 'Edukasi &\nPencegahan',
-        'route': '/reports'
-      },
+      {'icon': Icons.edit_document, 'label': 'Buat\nLaporan', 'route': '/report/create'},
+      {'icon': Icons.monitor_heart_outlined, 'label': 'Monitoring\nKasus', 'route': '/principal/monitoring'},
+      {'icon': Icons.bar_chart_rounded, 'label': 'Rekapitu-\nlasi', 'route': '/principal/recap'},
+      {'icon': Icons.menu_book_outlined, 'label': 'Edukasi &\nPencegahan', 'route': '/reports'},
     ];
 
     return Row(
@@ -580,34 +644,19 @@ class _PrincipalDashboardScreenState
           child: Column(
             children: [
               Container(
-                width: 60,
-                height: 60,
+                width: 60, height: 60,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: AppTheme.neutral300),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 6, offset: const Offset(0, 2))],
                 ),
-                child:
-                    Icon(a['icon'] as IconData, color: AppTheme.primary600, size: 28),
+                child: Icon(a['icon'] as IconData, color: AppTheme.primary600, size: 28),
               ),
               const SizedBox(height: 6),
               SizedBox(
                 width: 72,
-                child: Text(
-                  a['label'] as String,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      fontSize: 11,
-                      color: AppTheme.neutral700,
-                      fontWeight: FontWeight.w500),
-                ),
+                child: Text(a['label'] as String, textAlign: TextAlign.center, style: const TextStyle(fontSize: 11, color: AppTheme.neutral700, fontWeight: FontWeight.w500)),
               ),
             ],
           ),
@@ -637,26 +686,14 @@ class _PieChartPainter extends CustomPainter {
     final rect = Rect.fromCircle(center: center, radius: radius);
 
     canvas.drawCircle(center, radius,
-        Paint()
-          ..color = secondaryColor
-          ..style = PaintingStyle.fill);
+        Paint()..color = secondaryColor..style = PaintingStyle.fill);
 
     final sweepAngle = 2 * 3.14159265 * percentage;
-    canvas.drawArc(
-        rect,
-        -3.14159265 / 2,
-        sweepAngle,
-        true,
-        Paint()
-          ..color = primaryColor
-          ..style = PaintingStyle.fill);
+    canvas.drawArc(rect, -3.14159265 / 2, sweepAngle, true,
+        Paint()..color = primaryColor..style = PaintingStyle.fill);
 
-    canvas.drawCircle(
-        center,
-        radius * 0.55,
-        Paint()
-          ..color = Colors.white
-          ..style = PaintingStyle.fill);
+    canvas.drawCircle(center, radius * 0.55,
+        Paint()..color = Colors.white..style = PaintingStyle.fill);
   }
 
   @override

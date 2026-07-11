@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:responsive_framework/responsive_framework.dart';
 import '../../../../core/theme/app_theme.dart';
 import 'package:go_router/go_router.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
@@ -21,6 +22,7 @@ class _TeacherDashboardScreenState
     final authState = ref.watch(authProvider);
     final statsAsync = ref.watch(dashboardStatsProvider);
     final reportsAsync = ref.watch(reportsListProvider);
+    final isDesktop = ResponsiveBreakpoints.of(context).largerOrEqualTo(DESKTOP);
 
     String userName = 'Bu Guru';
     if (authState is AuthSuccess) {
@@ -51,11 +53,11 @@ class _TeacherDashboardScreenState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ─── AppBar ──────────────────────────────────────────────
-                _buildAppBar(context),
+                // ─── AppBar (mobile only) ────────────────────────────
+                if (!isDesktop) _buildAppBar(context),
 
                 Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(isDesktop ? 32 : 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -92,311 +94,10 @@ class _TeacherDashboardScreenState
                       ),
                       const SizedBox(height: 16),
 
-                      // ─── Stat Cards ──────────────────────────────────
-                      statsAsync.when(
-                        loading: () => _buildStatGrid(0, 0, 0, 0, 0, 0),
-                        error: (e, _) => _buildStatGrid(0, 0, 0, 0, 0, 0),
-                        data: (stats) => _buildStatGrid(
-                          stats.total,
-                          stats.total, // menunggu approx
-                          stats.total - stats.completed - stats.mediation,
-                          stats.valid,
-                          stats.mediation,
-                          stats.completed,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // ─── Recent Reports ──────────────────────────────
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Column(
-                          children: [
-                            reportsAsync.when(
-                              loading: () => const Padding(
-                                padding: EdgeInsets.all(24),
-                                child: Center(
-                                    child: CircularProgressIndicator()),
-                              ),
-                              error: (e, _) => const SizedBox.shrink(),
-                              data: (reports) {
-                                final recent = reports.take(5).toList();
-                                if (recent.isEmpty) {
-                                  return const Padding(
-                                    padding: EdgeInsets.all(24),
-                                    child: Center(
-                                        child: Text('Belum ada laporan',
-                                            style: TextStyle(
-                                                color:
-                                                    AppTheme.neutral400))),
-                                  );
-                                }
-                                return Column(
-                                  children: List.generate(recent.length,
-                                      (i) {
-                                    final r = recent[i];
-                                    final badgeColor =
-                                        _getBadgeColor(r.status);
-                                    final badgeLabel =
-                                        _formatStatusShort(r.status);
-                                    return Column(
-                                      children: [
-                                        InkWell(
-                                          onTap: () => context
-                                              .push('/report/${r.id}'),
-                                          child: Padding(
-                                            padding:
-                                                const EdgeInsets.symmetric(
-                                                    horizontal: 16,
-                                                    vertical: 12),
-                                            child: Row(
-                                              children: [
-                                                Container(
-                                                  width: 36,
-                                                  height: 36,
-                                                  decoration: BoxDecoration(
-                                                    color:
-                                                        AppTheme.primary50,
-                                                    borderRadius:
-                                                        BorderRadius
-                                                            .circular(8),
-                                                  ),
-                                                  child: const Icon(
-                                                      Icons.article_outlined,
-                                                      color:
-                                                          AppTheme.primary600,
-                                                      size: 20),
-                                                ),
-                                                const SizedBox(width: 10),
-                                                Expanded(
-                                                  child: Column(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    children: [
-                                                      Text(
-                                                        r.reportCode,
-                                                        style: const TextStyle(
-                                                            fontWeight:
-                                                                FontWeight
-                                                                    .bold,
-                                                            fontSize: 13,
-                                                            color: AppTheme
-                                                                .primary600),
-                                                      ),
-                                                      Text(
-                                                        r.category ??
-                                                            r.title,
-                                                        style: const TextStyle(
-                                                            fontSize: 11,
-                                                            color: AppTheme
-                                                                .neutral500),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                                if (r.incidentDate != null)
-                                                  Text(
-                                                    r.incidentDate!,
-                                                    style: const TextStyle(
-                                                        fontSize: 10,
-                                                        color:
-                                                            AppTheme.neutral400),
-                                                  ),
-                                                const SizedBox(width: 8),
-                                                Container(
-                                                  padding: const EdgeInsets
-                                                      .symmetric(
-                                                      horizontal: 10,
-                                                      vertical: 4),
-                                                  decoration: BoxDecoration(
-                                                    color: badgeColor,
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            20),
-                                                  ),
-                                                  child: Text(
-                                                    badgeLabel,
-                                                    style: const TextStyle(
-                                                        color: Colors.white,
-                                                        fontSize: 11,
-                                                        fontWeight:
-                                                            FontWeight.bold),
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 4),
-                                                const Icon(
-                                                    Icons.chevron_right,
-                                                    size: 18,
-                                                    color:
-                                                        AppTheme.neutral400),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                        if (i < recent.length - 1)
-                                          const Divider(
-                                              height: 1,
-                                              indent: 16,
-                                              endIndent: 16),
-                                      ],
-                                    );
-                                  }),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // ─── Quick Actions (Carousel style) ──────────────
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: [
-                              _quickAction(
-                                  context,
-                                  Icons.edit_document,
-                                  'Manajemen\nLaporan',
-                                  '/reports'),
-                              const SizedBox(width: 24),
-                              _quickAction(
-                                  context,
-                                  Icons.verified_outlined,
-                                  'Validasi\nLaporan',
-                                  '/reports'),
-                              const SizedBox(width: 24),
-                              _quickAction(
-                                  context,
-                                  Icons.find_in_page_outlined,
-                                  'Pemeriksaan\nBukti',
-                                  '/reports'),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // ─── Jadwal Mediasi ───────────────────────────────
-                      Container(
-                        decoration: BoxDecoration(
-                          color: AppTheme.primary50,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppTheme.primary100),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(
-                                  16, 14, 16, 10),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 32,
-                                    height: 32,
-                                    decoration: BoxDecoration(
-                                      color: AppTheme.primary600,
-                                      borderRadius:
-                                          BorderRadius.circular(8),
-                                    ),
-                                    child: const Icon(
-                                        Icons.calendar_month_outlined,
-                                        color: Colors.white,
-                                        size: 18),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  const Text(
-                                    'Jadwal Mediasi Mendatang',
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                        color: AppTheme.primary600),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const Divider(height: 1),
-                            reportsAsync.when(
-                              loading: () => const Padding(
-                                padding: EdgeInsets.all(16),
-                                child: Center(
-                                    child: CircularProgressIndicator(
-                                        strokeWidth: 2)),
-                              ),
-                              error: (_, __) => const SizedBox.shrink(),
-                              data: (reports) {
-                                final mediationReports = reports
-                                    .where((r) =>
-                                        r.status == 'mediation' &&
-                                        r.incidentDate != null)
-                                    .take(3)
-                                    .toList();
-                                if (mediationReports.isEmpty) {
-                                  return const Padding(
-                                    padding: EdgeInsets.all(16),
-                                    child: Center(
-                                      child: Text(
-                                        'Belum ada jadwal mediasi',
-                                        style: TextStyle(
-                                            fontSize: 12,
-                                            color: AppTheme.neutral400),
-                                      ),
-                                    ),
-                                  );
-                                }
-                                return Column(
-                                  children: [
-                                    for (var i = 0;
-                                        i < mediationReports.length;
-                                        i++) ...[
-                                      if (i > 0)
-                                        const Divider(
-                                            height: 1,
-                                            indent: 16,
-                                            endIndent: 16),
-                                      _mediationItemFromReport(
-                                          mediationReports[i]),
-                                    ],
-                                  ],
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 8),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // ─── Notification Summary ────────────────────────
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Column(
-                          children: [
-                            _notifRow(Icons.check_circle, AppTheme.success600,
-                                null, 4),
-                            const SizedBox(height: 12),
-                            _notifRow(Icons.check_circle, AppTheme.primary600,
-                                '3 laporan menunggu validasi\nPerlu pemeriksaan segera',
-                                4),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
+                      if (isDesktop)
+                        _buildDesktopContent(statsAsync, reportsAsync, context)
+                      else
+                        _buildMobileContent(statsAsync, reportsAsync, context),
                     ],
                   ),
                 ),
@@ -404,6 +105,414 @@ class _TeacherDashboardScreenState
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  // ─── Desktop Content ─────────────────────────────────────────────────
+  Widget _buildDesktopContent(AsyncValue statsAsync, AsyncValue reportsAsync, BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ─── Stat Grid — 3 columns on desktop ────────────
+        statsAsync.when(
+          loading: () => _buildStatGridDesktop(0, 0, 0, 0, 0, 0),
+          error: (e, _) => _buildStatGridDesktop(0, 0, 0, 0, 0, 0),
+          data: (stats) => _buildStatGridDesktop(
+            stats.total,
+            stats.total,
+            stats.total - stats.completed - stats.mediation,
+            stats.valid,
+            stats.mediation,
+            stats.completed,
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // ─── Two-column: Reports Table + Sidebar ─────────
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Main content — Reports table
+            Expanded(
+              flex: 3,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppTheme.neutral100),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Laporan Terbaru',
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.neutral900)),
+                          TextButton(
+                            onPressed: () => context.go('/reports'),
+                            child: const Text('Lihat Semua', style: TextStyle(fontSize: 13, color: AppTheme.primary600)),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Table header
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: AppTheme.neutral50,
+                        border: Border(
+                          top: BorderSide(color: AppTheme.neutral100),
+                          bottom: BorderSide(color: AppTheme.neutral100),
+                        ),
+                      ),
+                      child: const Row(
+                        children: [
+                          SizedBox(width: 36 + 10),
+                          Expanded(flex: 2, child: Text('Kode', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.neutral500))),
+                          Expanded(flex: 3, child: Text('Kategori', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.neutral500))),
+                          Expanded(flex: 2, child: Text('Tanggal', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.neutral500))),
+                          SizedBox(width: 100, child: Text('Status', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.neutral500))),
+                        ],
+                      ),
+                    ),
+                    reportsAsync.when(
+                      loading: () => const Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+                      error: (e, _) => const SizedBox.shrink(),
+                      data: (reports) {
+                        final recent = reports.take(8).toList();
+                        if (recent.isEmpty) {
+                          return const Padding(
+                            padding: EdgeInsets.all(24),
+                            child: Center(child: Text('Belum ada laporan', style: TextStyle(color: AppTheme.neutral400))),
+                          );
+                        }
+                        return Column(
+                          children: List.generate(recent.length, (i) {
+                            final r = recent[i];
+                            final badgeColor = _getBadgeColor(r.status);
+                            final badgeLabel = _formatStatusShort(r.status);
+                            return InkWell(
+                              onTap: () => context.push('/report/${r.id}'),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                decoration: BoxDecoration(
+                                  border: Border(bottom: BorderSide(color: AppTheme.neutral100.withValues(alpha: 0.5))),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 36,
+                                      height: 36,
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.primary50,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Icon(Icons.article_outlined, color: AppTheme.primary600, size: 20),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      flex: 2,
+                                      child: Text(r.reportCode, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.primary600)),
+                                    ),
+                                    Expanded(
+                                      flex: 3,
+                                      child: Text(r.category ?? r.title, style: const TextStyle(fontSize: 12, color: AppTheme.neutral600), overflow: TextOverflow.ellipsis),
+                                    ),
+                                    Expanded(
+                                      flex: 2,
+                                      child: Text(r.incidentDate ?? '-', style: const TextStyle(fontSize: 12, color: AppTheme.neutral400)),
+                                    ),
+                                    SizedBox(
+                                      width: 100,
+                                      child: Center(
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                          decoration: BoxDecoration(color: badgeColor, borderRadius: BorderRadius.circular(20)),
+                                          child: Text(badgeLabel, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 24),
+            // Sidebar — Quick Actions + Mediasi
+            Expanded(
+              flex: 2,
+              child: Column(
+                children: [
+                  // Quick Actions
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppTheme.neutral100),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Aksi Cepat',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.neutral900)),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(child: _quickActionDesktop(context, Icons.edit_document, 'Manajemen\nLaporan', '/reports')),
+                            const SizedBox(width: 12),
+                            Expanded(child: _quickActionDesktop(context, Icons.verified_outlined, 'Validasi\nLaporan', '/reports')),
+                            const SizedBox(width: 12),
+                            Expanded(child: _quickActionDesktop(context, Icons.find_in_page_outlined, 'Periksa\nBukti', '/reports')),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Jadwal Mediasi
+                  _buildJadwalMediasi(reportsAsync, context),
+                  const SizedBox(height: 16),
+                  // Notification Summary
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppTheme.neutral100),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Ringkasan Notifikasi',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.neutral900)),
+                        const SizedBox(height: 12),
+                        _notifRow(Icons.check_circle, AppTheme.success600, null, 4),
+                        const SizedBox(height: 12),
+                        _notifRow(Icons.check_circle, AppTheme.primary600,
+                            '3 laporan menunggu validasi\nPerlu pemeriksaan segera', 4),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  // ─── Mobile Content ──────────────────────────────────────────────────
+  Widget _buildMobileContent(AsyncValue statsAsync, AsyncValue reportsAsync, BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ─── Stat Cards ──────────────────────────────────
+        statsAsync.when(
+          loading: () => _buildStatGrid(0, 0, 0, 0, 0, 0),
+          error: (e, _) => _buildStatGrid(0, 0, 0, 0, 0, 0),
+          data: (stats) => _buildStatGrid(
+            stats.total,
+            stats.total,
+            stats.total - stats.completed - stats.mediation,
+            stats.valid,
+            stats.mediation,
+            stats.completed,
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // ─── Recent Reports ──────────────────────────────
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            children: [
+              reportsAsync.when(
+                loading: () => const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+                error: (e, _) => const SizedBox.shrink(),
+                data: (reports) {
+                  final recent = reports.take(5).toList();
+                  if (recent.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Center(child: Text('Belum ada laporan', style: TextStyle(color: AppTheme.neutral400))),
+                    );
+                  }
+                  return Column(
+                    children: List.generate(recent.length, (i) {
+                      final r = recent[i];
+                      final badgeColor = _getBadgeColor(r.status);
+                      final badgeLabel = _formatStatusShort(r.status);
+                      return Column(
+                        children: [
+                          InkWell(
+                            onTap: () => context.push('/report/${r.id}'),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 36, height: 36,
+                                    decoration: BoxDecoration(color: AppTheme.primary50, borderRadius: BorderRadius.circular(8)),
+                                    child: const Icon(Icons.article_outlined, color: AppTheme.primary600, size: 20),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(r.reportCode, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.primary600)),
+                                        Text(r.category ?? r.title, style: const TextStyle(fontSize: 11, color: AppTheme.neutral500)),
+                                      ],
+                                    ),
+                                  ),
+                                  if (r.incidentDate != null)
+                                    Text(r.incidentDate!, style: const TextStyle(fontSize: 10, color: AppTheme.neutral400)),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(color: badgeColor, borderRadius: BorderRadius.circular(20)),
+                                    child: Text(badgeLabel, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  const Icon(Icons.chevron_right, size: 18, color: AppTheme.neutral400),
+                                ],
+                              ),
+                            ),
+                          ),
+                          if (i < recent.length - 1)
+                            const Divider(height: 1, indent: 16, endIndent: 16),
+                        ],
+                      );
+                    }),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // ─── Quick Actions (Carousel style) ──────────────
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _quickAction(context, Icons.edit_document, 'Manajemen\nLaporan', '/reports'),
+                const SizedBox(width: 24),
+                _quickAction(context, Icons.verified_outlined, 'Validasi\nLaporan', '/reports'),
+                const SizedBox(width: 24),
+                _quickAction(context, Icons.find_in_page_outlined, 'Pemeriksaan\nBukti', '/reports'),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // ─── Jadwal Mediasi ───────────────────────────────
+        _buildJadwalMediasi(reportsAsync, context),
+        const SizedBox(height: 16),
+
+        // ─── Notification Summary ────────────────────────
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+          child: Column(
+            children: [
+              _notifRow(Icons.check_circle, AppTheme.success600, null, 4),
+              const SizedBox(height: 12),
+              _notifRow(Icons.check_circle, AppTheme.primary600,
+                  '3 laporan menunggu validasi\nPerlu pemeriksaan segera', 4),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  // ─── Jadwal Mediasi (shared) ────────────────────────────────────────────
+
+  Widget _buildJadwalMediasi(AsyncValue reportsAsync, BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.primary50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.primary100),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+            child: Row(
+              children: [
+                Container(
+                  width: 32, height: 32,
+                  decoration: BoxDecoration(color: AppTheme.primary600, borderRadius: BorderRadius.circular(8)),
+                  child: const Icon(Icons.calendar_month_outlined, color: Colors.white, size: 18),
+                ),
+                const SizedBox(width: 10),
+                const Text('Jadwal Mediasi Mendatang',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.primary600)),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          reportsAsync.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.all(16),
+              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            ),
+            error: (_, __) => const SizedBox.shrink(),
+            data: (reports) {
+              final mediationReports = reports
+                  .where((r) => r.status == 'mediation' && r.incidentDate != null)
+                  .take(3)
+                  .toList();
+              if (mediationReports.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Center(child: Text('Belum ada jadwal mediasi', style: TextStyle(fontSize: 12, color: AppTheme.neutral400))),
+                );
+              }
+              return Column(
+                children: [
+                  for (var i = 0; i < mediationReports.length; i++) ...[
+                    if (i > 0) const Divider(height: 1, indent: 16, endIndent: 16),
+                    _mediationItemFromReport(mediationReports[i]),
+                  ],
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 8),
+        ],
       ),
     );
   }
@@ -420,43 +529,25 @@ class _TeacherDashboardScreenState
           Row(
             children: [
               Container(
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(
-                  color: AppTheme.primary600,
-                  borderRadius: BorderRadius.circular(7),
-                ),
-                child: const Icon(Icons.shield_outlined,
-                    color: Colors.white, size: 18),
+                width: 30, height: 30,
+                decoration: BoxDecoration(color: AppTheme.primary600, borderRadius: BorderRadius.circular(7)),
+                child: const Icon(Icons.shield_outlined, color: Colors.white, size: 18),
               ),
               const SizedBox(width: 6),
-              const Text(
-                'SpeakUp',
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.primary600),
-              ),
+              const Text('SpeakUp', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.primary600)),
             ],
           ),
           Stack(
             children: [
               IconButton(
                 onPressed: () => context.go('/notifications'),
-                icon: const Icon(Icons.notifications_outlined,
-                    color: AppTheme.neutral700),
+                icon: const Icon(Icons.notifications_outlined, color: AppTheme.neutral700),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
               ),
               Positioned(
-                right: 0,
-                top: 0,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                      color: AppTheme.danger600, shape: BoxShape.circle),
-                ),
+                right: 0, top: 0,
+                child: Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppTheme.danger600, shape: BoxShape.circle)),
               ),
             ],
           ),
@@ -465,7 +556,59 @@ class _TeacherDashboardScreenState
     );
   }
 
-  // ─── Stat Grid ────────────────────────────────────────────────────────────
+  // ─── Desktop Stat Grid — 3 columns ────────────────────────────────────
+
+  Widget _buildStatGridDesktop(int total, int menunggu, int diproses, int valid, int mediasi, int selesai) {
+    return Row(
+      children: [
+        Expanded(child: _statCardDesktop(Icons.folder_copy_outlined, '$total', 'Semua Laporan', const Color(0xFF1A3A7A))),
+        const SizedBox(width: 12),
+        Expanded(child: _statCardDesktop(Icons.timer_outlined, '$menunggu', 'Menunggu', AppTheme.warning600)),
+        const SizedBox(width: 12),
+        Expanded(child: _statCardDesktop(Icons.sync, '$diproses', 'Dalam Penanganan', AppTheme.primary600)),
+        const SizedBox(width: 12),
+        Expanded(child: _statCardDesktop(Icons.verified_outlined, '$valid', 'Valid', AppTheme.primary600)),
+        const SizedBox(width: 12),
+        Expanded(child: _statCardDesktop(Icons.people_outline, '$mediasi', 'Mediasi', const Color(0xFF1A3A7A))),
+        const SizedBox(width: 12),
+        Expanded(child: _statCardDesktop(Icons.check_circle_outline, '$selesai', 'Selesai', AppTheme.success600)),
+      ],
+    );
+  }
+
+  Widget _statCardDesktop(IconData icon, String count, String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: color, size: 18),
+              ),
+              const Spacer(),
+              Text(count, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22, color: color)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(label, style: const TextStyle(fontSize: 12, color: AppTheme.neutral600)),
+        ],
+      ),
+    );
+  }
+
+  // ─── Stat Grid (mobile — 2 columns) ──────────────────────────────────
 
   Widget _buildStatGrid(int total, int menunggu, int diproses, int valid,
       int mediasi, int selesai) {
@@ -477,29 +620,17 @@ class _TeacherDashboardScreenState
       mainAxisSpacing: 10,
       childAspectRatio: 2.5,
       children: [
-        _statCard(Icons.folder_copy_outlined, '$total', 'Semua Laporan',
-            const Color(0xFF1A3A7A), bordered: true),
-        _statCard(Icons.timer_outlined, '$menunggu', 'Sedang berjalan',
-            AppTheme.warning600,
-            bordered: true, label: 'Menunggu'),
-        _statCard(Icons.sync, '$diproses', 'Dalam Penanganan',
-            AppTheme.primary600,
-            bordered: true, label: 'Diproses'),
-        _statCard(Icons.verified_outlined, '$valid', 'Sedang berjalan',
-            AppTheme.primary600,
-            bordered: true, label: 'Valid'),
-        _statCard(Icons.people_outline, '$mediasi', 'Sedang berjalan',
-            const Color(0xFF1A3A7A),
-            bordered: true, label: 'Mediasi'),
-        _statCard(Icons.check_circle_outline, '$selesai', 'Sedang berjalan',
-            AppTheme.success600,
-            bordered: true, label: 'Selesai'),
+        _statCard(Icons.folder_copy_outlined, '$total', 'Semua Laporan', const Color(0xFF1A3A7A), bordered: true),
+        _statCard(Icons.timer_outlined, '$menunggu', 'Sedang berjalan', AppTheme.warning600, bordered: true, label: 'Menunggu'),
+        _statCard(Icons.sync, '$diproses', 'Dalam Penanganan', AppTheme.primary600, bordered: true, label: 'Diproses'),
+        _statCard(Icons.verified_outlined, '$valid', 'Sedang berjalan', AppTheme.primary600, bordered: true, label: 'Valid'),
+        _statCard(Icons.people_outline, '$mediasi', 'Sedang berjalan', const Color(0xFF1A3A7A), bordered: true, label: 'Mediasi'),
+        _statCard(Icons.check_circle_outline, '$selesai', 'Sedang berjalan', AppTheme.success600, bordered: true, label: 'Selesai'),
       ],
     );
   }
 
-  Widget _statCard(IconData icon, String count, String sub, Color color,
-      {bool bordered = false, String? label}) {
+  Widget _statCard(IconData icon, String count, String sub, Color color, {bool bordered = false, String? label}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
@@ -520,26 +651,12 @@ class _TeacherDashboardScreenState
                   crossAxisAlignment: CrossAxisAlignment.baseline,
                   textBaseline: TextBaseline.alphabetic,
                   children: [
-                    Text(count,
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 20,
-                            color: color)),
+                    Text(count, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: color)),
                     const SizedBox(width: 4),
-                    Flexible(
-                      child: Text(
-                        label ?? sub,
-                        style: const TextStyle(
-                            fontSize: 11, color: AppTheme.neutral600),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
+                    Flexible(child: Text(label ?? sub, style: const TextStyle(fontSize: 11, color: AppTheme.neutral600), overflow: TextOverflow.ellipsis)),
                   ],
                 ),
-                Text(sub,
-                    style: const TextStyle(
-                        fontSize: 10, color: AppTheme.neutral400),
-                    overflow: TextOverflow.ellipsis),
+                Text(sub, style: const TextStyle(fontSize: 10, color: AppTheme.neutral400), overflow: TextOverflow.ellipsis),
               ],
             ),
           ),
@@ -550,11 +667,9 @@ class _TeacherDashboardScreenState
 
   // ─── Quick Action ─────────────────────────────────────────────────────────
 
-  Widget _quickAction(
-      BuildContext context, IconData icon, String label, String route) {
+  Widget _quickAction(BuildContext context, IconData icon, String label, String route) {
     return GestureDetector(
       onTap: () {
-        // Shell branch routes use go(), full-screen routes use push()
         if (route == '/reports' || route == '/notifications' || route == '/mediations') {
           context.go(route);
         } else {
@@ -564,8 +679,7 @@ class _TeacherDashboardScreenState
       child: Column(
         children: [
           Container(
-            width: 64,
-            height: 64,
+            width: 64, height: 64,
             decoration: BoxDecoration(
               color: AppTheme.primary50,
               borderRadius: BorderRadius.circular(16),
@@ -574,15 +688,36 @@ class _TeacherDashboardScreenState
             child: Icon(icon, color: AppTheme.primary600, size: 30),
           ),
           const SizedBox(height: 6),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-                fontSize: 11,
-                color: AppTheme.neutral700,
-                fontWeight: FontWeight.w500),
-          ),
+          Text(label, textAlign: TextAlign.center, style: const TextStyle(fontSize: 11, color: AppTheme.neutral700, fontWeight: FontWeight.w500)),
         ],
+      ),
+    );
+  }
+
+  Widget _quickActionDesktop(BuildContext context, IconData icon, String label, String route) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: () {
+        if (route == '/reports' || route == '/notifications' || route == '/mediations') {
+          context.go(route);
+        } else {
+          context.push(route);
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: AppTheme.primary50,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppTheme.primary100),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: AppTheme.primary600, size: 28),
+            const SizedBox(height: 8),
+            Text(label, textAlign: TextAlign.center, style: const TextStyle(fontSize: 11, color: AppTheme.neutral700, fontWeight: FontWeight.w500)),
+          ],
+        ),
       ),
     );
   }
@@ -605,14 +740,8 @@ class _TeacherDashboardScreenState
         children: [
           Column(
             children: [
-              Text(day,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: AppTheme.neutral900)),
-              Text(month,
-                  style: const TextStyle(
-                      fontSize: 11, color: AppTheme.neutral500)),
+              Text(day, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.neutral900)),
+              Text(month, style: const TextStyle(fontSize: 11, color: AppTheme.neutral500)),
             ],
           ),
           const SizedBox(width: 14),
@@ -620,17 +749,9 @@ class _TeacherDashboardScreenState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(report.reportCode,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                        color: AppTheme.primary600)),
-                Text(report.category ?? report.title,
-                    style: const TextStyle(
-                        fontSize: 12, color: AppTheme.neutral600)),
-                Text(report.incidentLocation ?? '',
-                    style: const TextStyle(
-                        fontSize: 11, color: AppTheme.neutral400)),
+                Text(report.reportCode, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.primary600)),
+                Text(report.category ?? report.title, style: const TextStyle(fontSize: 12, color: AppTheme.neutral600)),
+                Text(report.incidentLocation ?? '', style: const TextStyle(fontSize: 11, color: AppTheme.neutral400)),
               ],
             ),
           ),
@@ -641,24 +762,17 @@ class _TeacherDashboardScreenState
 
   // ─── Notif Row ────────────────────────────────────────────────────────────
 
-  Widget _notifRow(
-      IconData icon, Color color, String? text, int count) {
+  Widget _notifRow(IconData icon, Color color, String? text, int count) {
     return Row(
       children: [
         Icon(icon, color: color, size: 22),
         const SizedBox(width: 10),
         Expanded(
           child: text != null
-              ? Text(text,
-                  style: const TextStyle(
-                      fontSize: 12, color: AppTheme.neutral700))
+              ? Text(text, style: const TextStyle(fontSize: 12, color: AppTheme.neutral700))
               : const SizedBox.shrink(),
         ),
-        Text('$count',
-            style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-                color: AppTheme.neutral700)),
+        Text('$count', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.neutral700)),
       ],
     );
   }
@@ -667,35 +781,23 @@ class _TeacherDashboardScreenState
 
   Color _getBadgeColor(String status) {
     switch (status) {
-      case 'waiting_validation':
-        return AppTheme.warning600;
-      case 'processing':
-        return AppTheme.primary600;
-      case 'mediation':
-        return const Color(0xFF7C3AED);
-      case 'completed':
-        return AppTheme.success600;
-      case 'rejected':
-        return AppTheme.danger600;
-      default:
-        return AppTheme.neutral500;
+      case 'waiting_validation': return AppTheme.warning600;
+      case 'processing': return AppTheme.primary600;
+      case 'mediation': return const Color(0xFF7C3AED);
+      case 'completed': return AppTheme.success600;
+      case 'rejected': return AppTheme.danger600;
+      default: return AppTheme.neutral500;
     }
   }
 
   String _formatStatusShort(String status) {
     switch (status) {
-      case 'waiting_validation':
-        return 'Menunggu';
-      case 'processing':
-        return 'Diproses';
-      case 'mediation':
-        return 'Mediasi';
-      case 'completed':
-        return 'Selesai';
-      case 'rejected':
-        return 'Ditolak';
-      default:
-        return 'Terkirim';
+      case 'waiting_validation': return 'Menunggu';
+      case 'processing': return 'Diproses';
+      case 'mediation': return 'Mediasi';
+      case 'completed': return 'Selesai';
+      case 'rejected': return 'Ditolak';
+      default: return 'Terkirim';
     }
   }
 }
