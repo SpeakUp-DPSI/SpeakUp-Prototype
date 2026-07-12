@@ -4,9 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 
-import 'main_sidebar.dart';
-import 'widgets/web_header.dart';
-
 /// Tab configuration for each role.
 class _TabConfig {
   final int branchIndex;
@@ -21,9 +18,6 @@ class _TabConfig {
     required this.label,
   });
 }
-
-// Ensure the class name TabConfig matches what is used in main_sidebar.dart
-typedef TabConfig = _TabConfig;
 
 class MainWrapperScreen extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
@@ -85,80 +79,11 @@ class _MainWrapperScreenState extends ConsumerState<MainWrapperScreen> {
     }
   }
 
-  String _getRoleBadgeText(String role) {
-    if (role.contains('admin')) return 'Admin';
-    if (role.contains('kepsek') || role.contains('kepala')) return 'Kepala Sekolah';
-    if (role.contains('guru') || role.contains('bk')) return 'Guru BK';
-    if (role.contains('ortu') || role.contains('wali') || role.contains('orangtua')) return 'Orang Tua';
-    return 'Siswa';
-  }
-
-  Color _getRoleBadgeColor(String role) {
-    if (role.contains('admin')) return AppTheme.purple600;
-    if (role.contains('kepsek') || role.contains('kepala')) return const Color(0xFF0D9488);
-    if (role.contains('guru') || role.contains('bk')) return AppTheme.primary600;
-    if (role.contains('ortu') || role.contains('wali') || role.contains('orangtua')) return AppTheme.warning600;
-    return AppTheme.info600;
-  }
-
-  List<QuickLinkConfig> _getQuickLinksForRole(String role) {
-    if (role.contains('admin')) {
-      return [
-        const QuickLinkConfig(Icons.manage_accounts_rounded, 'Kelola Pengguna', '/admin/users'),
-        const QuickLinkConfig(Icons.receipt_long, 'Audit Log', '/audit-logs'),
-      ];
-    }
-    if (role.contains('kepsek') || role.contains('kepala')) {
-      return [
-        const QuickLinkConfig(Icons.bar_chart_rounded, 'Rekap Laporan', '/principal/recap'),
-        const QuickLinkConfig(Icons.monitor_heart_outlined, 'Monitoring', '/principal/monitoring'),
-      ];
-    }
-    return [];
-  }
-
   @override
   Widget build(BuildContext context) {
     final role = _getUserRole();
     final tabs = _getTabsForRole(role);
     final isStudent = role.contains('siswa') || role.isEmpty;
-    final isWideScreen = MediaQuery.of(context).size.width >= 768;
-    
-    final authState = ref.watch(authProvider);
-    String userName = 'User';
-    String userEmail = '';
-    if (authState is AuthSuccess) {
-      userName = authState.user.name;
-      userEmail = authState.user.email;
-    }
-
-    if (isWideScreen) {
-      return Scaffold(
-        body: Row(
-          children: [
-            MainSidebar(
-              tabs: tabs,
-              navigationShell: widget.navigationShell,
-              isStudent: isStudent,
-              userName: userName,
-              userEmail: userEmail,
-              roleBadgeText: _getRoleBadgeText(role),
-              roleBadgeColor: _getRoleBadgeColor(role),
-              quickLinks: _getQuickLinksForRole(role),
-            ),
-            Expanded(
-              child: Scaffold(
-                appBar: WebHeader(
-                  title: tabs.firstWhere((t) => t.branchIndex == widget.navigationShell.currentIndex, orElse: () => tabs.first).label,
-                ),
-                body: widget.navigationShell,
-                floatingActionButton: isStudent ? _buildCreateReportFab(context) : null,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
 
     return Scaffold(
       body: widget.navigationShell,

@@ -4,7 +4,6 @@ import '../../../../core/theme/app_theme.dart';
 import 'package:go_router/go_router.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../../report/presentation/providers/report_provider.dart';
-import 'web_profile_dropdown.dart';
 
 class StudentDashboardScreen extends ConsumerStatefulWidget {
   const StudentDashboardScreen({super.key});
@@ -169,8 +168,6 @@ class _StudentDashboardScreenState
   // ─── AppBar ─────────────────────────────────────────────────────────────
 
   Widget _buildAppBar(BuildContext context) {
-    if (MediaQuery.of(context).size.width >= 768) return const SizedBox.shrink();
-
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -201,21 +198,16 @@ class _StudentDashboardScreenState
               ),
             ],
           ),
-          // Actions
-          Row(
+          // Notif bell
+          Stack(
             children: [
-              if (MediaQuery.of(context).size.width >= 768)
-                const WebProfileDropdown(),
-              const SizedBox(width: 8),
-              Stack(
-                children: [
-                  IconButton(
-                    onPressed: () => context.go('/notifications'),
-                    icon: const Icon(Icons.notifications_outlined,
-                        color: AppTheme.neutral700, size: 26),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
+              IconButton(
+                onPressed: () => context.go('/notifications'),
+                icon: const Icon(Icons.notifications_outlined,
+                    color: AppTheme.neutral700, size: 26),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
               Positioned(
                 right: 0,
                 top: 0,
@@ -230,9 +222,7 @@ class _StudentDashboardScreenState
               ),
             ],
           ),
-          ],
-        ),
-      ],
+        ],
       ),
     );
   }

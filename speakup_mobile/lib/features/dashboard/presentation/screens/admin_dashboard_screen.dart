@@ -2,29 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
-import 'web_profile_dropdown.dart';
 
 class AdminDashboardScreen extends ConsumerWidget {
   const AdminDashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isWideScreen = MediaQuery.of(context).size.width >= 768;
-
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F4FA),
-      appBar: isWideScreen ? null : AppBar(
+      appBar: AppBar(
         title: const Text('Admin Console', style: TextStyle(color: AppTheme.neutral900, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [
-          if (MediaQuery.of(context).size.width >= 768)
-            const Padding(
-              padding: EdgeInsets.only(right: 8.0),
-              child: Center(child: WebProfileDropdown()),
-            ),
           Stack(
-            alignment: Alignment.center,
             children: [
               IconButton(
                 onPressed: () => context.push('/notifications'),

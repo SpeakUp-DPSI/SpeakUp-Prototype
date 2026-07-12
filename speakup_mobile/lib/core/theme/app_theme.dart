@@ -26,22 +26,8 @@ class AppTheme {
   static const Color warning600 = Color(0xFFD97706);
   static const Color warning100 = Color(0xFFFEF3C7);
   static const Color danger600 = Color(0xFFDC2626);
-  static const Color danger100 = Color(0xFFFEE2E2);
   static const Color info600 = Color(0xFF2563EB);
   static const Color info100 = Color(0xFFDBEAFE);
-
-  // ─── Status badge palette (used via StatusColors) ──────────────────────────
-  // Perlu menambahkan purple untuk status mediasi
-  static const Color purple600 = Color(0xFF7C3AED);
-  static const Color purple100 = Color(0xFFEDE9FE);
-
-  // ─── Semantic aliases (used by MainWrapperScreen & dashboard) ─────────────
-  /// Warna gelap untuk teks logo / heading utama (navy)
-  static const Color primaryDark  = Color(0xFF0D2149);
-  /// Background sidebar item aktif — biru sangat muda
-  static const Color primaryDim   = Color(0xFFEBF2FC);
-  /// Background area konten desktop — abu-biru sangat muda
-  static const Color bgElevated   = Color(0xFFF0F4FA);
 
   static ThemeData get lightTheme {
     return ThemeData(
@@ -103,53 +89,5 @@ class AppTheme {
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
     );
-  }
-}
-
-// ─── StatusColors ─────────────────────────────────────────────────────────────
-/// Kelas utilitas terpusat untuk warna dan label badge status laporan.
-/// Gunakan [StatusColors.of] untuk warna latar badge dan
-/// [StatusColors.labelOf] untuk teks label yang ditampilkan.
-class StatusColors {
-  StatusColors._();
-
-  /// Mengembalikan warna solid (background badge) berdasarkan nilai status.
-  static Color of(String status) {
-    switch (status) {
-      case 'waiting_validation':
-        return AppTheme.warning600;
-      case 'processing':
-        return AppTheme.primary600;
-      case 'mediation':
-        return AppTheme.purple600;
-      case 'follow_up':
-        return AppTheme.info600;
-      case 'completed':
-        return AppTheme.success600;
-      case 'rejected':
-        return AppTheme.danger600;
-      default:
-        return AppTheme.neutral500;
-    }
-  }
-
-  /// Mengembalikan label singkat yang ditampilkan pada badge.
-  static String labelOf(String status) {
-    switch (status) {
-      case 'waiting_validation':
-        return 'Menunggu';
-      case 'processing':
-        return 'Diproses';
-      case 'mediation':
-        return 'Mediasi';
-      case 'follow_up':
-        return 'Tindak Lanjut';
-      case 'completed':
-        return 'Selesai';
-      case 'rejected':
-        return 'Ditolak';
-      default:
-        return 'Terkirim';
-    }
   }
 }

@@ -1,8 +1,9 @@
 # SpeakUp Prototype
 
-SpeakUp adalah aplikasi pelaporan dan penanganan perundungan (bullying) di sekolah. Aplikasi ini terdiri dari dua bagian utama:
-1. **SpeakUp Backend**: API berbasis Laravel.
-2. **SpeakUp Mobile**: Aplikasi mobile berbasis Flutter.
+SpeakUp adalah aplikasi pelaporan dan penanganan perundungan (bullying) di sekolah. Aplikasi ini terdiri dari tiga bagian utama:
+1. **SpeakUp Backend**: API berbasis Laravel (`speakup_backend/`).
+2. **SpeakUp Mobile**: Aplikasi mobile berbasis Flutter untuk iOS dan Android (`speakup_mobile/`).
+3. **SpeakUp Web**: Aplikasi web (desktop) berbasis Flutter untuk browser (`speakup_web/`).
 
 ## Perubahan Terbaru (Update Terkini)
 Sejak pull terakhir, berikut adalah fitur dan perbaikan yang ditambahkan:

@@ -25,8 +25,6 @@ import '../../features/mediation/presentation/screens/mediation_detail_page.dart
 import '../../features/followup/presentation/screens/follow_up_screen.dart';
 import '../../features/followup/presentation/screens/create_follow_up_screen.dart';
 import '../../features/dashboard/presentation/screens/admin_audit_log_screen.dart';
-import '../../features/dashboard/presentation/screens/principal_recap_screen.dart';
-import '../../features/dashboard/presentation/screens/principal_monitoring_screen.dart';
 import '../../features/authentication/presentation/providers/auth_provider.dart';
 
 import 'route_observer.dart';
@@ -247,14 +245,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/audit-logs',
         builder: (context, state) => const AdminAuditLogScreen(),
-      ),
-      GoRoute(
-        path: '/principal/recap',
-        builder: (context, state) => const PrincipalRecapScreen(),
-      ),
-      GoRoute(
-        path: '/principal/monitoring',
-        builder: (context, state) => const PrincipalMonitoringScreen(),
       ),
     ],
   );

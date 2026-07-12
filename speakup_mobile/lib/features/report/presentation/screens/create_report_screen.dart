@@ -7,8 +7,6 @@ import 'package:file_picker/file_picker.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../authentication/presentation/widgets/auth_stepper.dart';
 
-import 'package:responsive_framework/responsive_framework.dart';
-
 // ─── Controller utama multi-step create report ────────────────────────────────
 
 class CreateReportScreen extends ConsumerStatefulWidget {
@@ -53,124 +51,89 @@ class _CreateReportScreenState extends ConsumerState<CreateReportScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = ResponsiveBreakpoints.of(context).largerOrEqualTo(TABLET);
-
-    Widget content = AnimatedSwitcher(
-      duration: const Duration(milliseconds: 200),
-      child: _step == 1
-          ? _Step1Identitas(
-              key: const ValueKey(1),
-              isAnonymous: _isAnonymous,
-              selectedCategory: _selectedCategory,
-              selectedDate: _selectedDate,
-              selectedTime: _selectedTime,
-              selectedLocation: _selectedLocation,
-              selectedParty: _selectedParty,
-              onToggleAnonymous: (v) =>
-                  setState(() => _isAnonymous = v),
-              onCategoryChanged: (v) =>
-                  setState(() => _selectedCategory = v),
-              onDateChanged: (v) => setState(() => _selectedDate = v),
-              onTimeChanged: (v) => setState(() => _selectedTime = v),
-              onLocationChanged: (v) =>
-                  setState(() => _selectedLocation = v),
-              onPartyChanged: (v) =>
-                  setState(() => _selectedParty = v),
-              onNext: _goNext,
-              onBack: _goBack,
-            )
-          : _Step2Bukti(
-              key: const ValueKey(2),
-              photos: _photos,
-              videos: _videos,
-              documents: _documents,
-              chronologyCtrl: _chronologyCtrl,
-              onPhotosChanged: (v) => setState(() {
-                _photos.clear();
-                _photos.addAll(v);
-              }),
-              onVideosChanged: (v) => setState(() {
-                _videos.clear();
-                _videos.addAll(v);
-              }),
-              onDocumentsChanged: (v) => setState(() {
-                _documents.clear();
-                _documents.addAll(v);
-              }),
-              onNext: () {
-                final filePaths = [
-                  ..._photos.map((f) => f.path),
-                  ..._videos.map((f) => f.path),
-                  ..._documents.map((f) => f.path),
-                ];
-
-                String dateStr = '';
-                if (_selectedDate != null) {
-                  dateStr =
-                      '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}';
-                }
-                String timeStr = '';
-                if (_selectedTime != null) {
-                  timeStr =
-                      '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')} WIB';
-                }
-
-                final reportData = {
-                  'isAnonymous': _isAnonymous,
-                  'category': _selectedCategory,
-                  'incidentDate': dateStr,
-                  'incidentTime': timeStr,
-                  'incidentLocation': _selectedLocation,
-                  'reportedId': _selectedParty,
-                  'description': _chronologyCtrl.text,
-                  'filePaths': filePaths,
-                  'hasFile': filePaths.isNotEmpty,
-                  'title': _selectedCategory.isNotEmpty
-                      ? _selectedCategory
-                      : 'Laporan Perundungan',
-                };
-
-                context.push('/report/review', extra: reportData);
-              },
-              onBack: _goBack,
-            ),
-    );
-
-    if (isDesktop) {
-      content = GestureDetector(
-        onTap: () => context.pop(),
-        behavior: HitTestBehavior.opaque,
-        child: Center(
-          child: GestureDetector(
-            onTap: () {}, // Prevent taps inside the card from closing it
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 480),
-              margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                    color: AppTheme.neutral200.withValues(alpha: 0.5), width: 1),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 32,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: content,
-            ),
-          ),
-        ),
-      );
-    }
-
     return Scaffold(
-      backgroundColor: isDesktop ? Colors.transparent : Colors.white,
+      backgroundColor: Colors.white,
       body: SafeArea(
-        child: content,
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: _step == 1
+              ? _Step1Identitas(
+                  key: const ValueKey(1),
+                  isAnonymous: _isAnonymous,
+                  selectedCategory: _selectedCategory,
+                  selectedDate: _selectedDate,
+                  selectedTime: _selectedTime,
+                  selectedLocation: _selectedLocation,
+                  selectedParty: _selectedParty,
+                  onToggleAnonymous: (v) =>
+                      setState(() => _isAnonymous = v),
+                  onCategoryChanged: (v) =>
+                      setState(() => _selectedCategory = v),
+                  onDateChanged: (v) => setState(() => _selectedDate = v),
+                  onTimeChanged: (v) => setState(() => _selectedTime = v),
+                  onLocationChanged: (v) =>
+                      setState(() => _selectedLocation = v),
+                  onPartyChanged: (v) =>
+                      setState(() => _selectedParty = v),
+                  onNext: _goNext,
+                  onBack: _goBack,
+                )
+              : _Step2Bukti(
+                  key: const ValueKey(2),
+                  photos: _photos,
+                  videos: _videos,
+                  documents: _documents,
+                  chronologyCtrl: _chronologyCtrl,
+                  onPhotosChanged: (v) => setState(() {
+                    _photos.clear();
+                    _photos.addAll(v);
+                  }),
+                  onVideosChanged: (v) => setState(() {
+                    _videos.clear();
+                    _videos.addAll(v);
+                  }),
+                  onDocumentsChanged: (v) => setState(() {
+                    _documents.clear();
+                    _documents.addAll(v);
+                  }),
+                  onNext: () {
+                    final filePaths = [
+                      ..._photos.map((f) => f.path),
+                      ..._videos.map((f) => f.path),
+                      ..._documents.map((f) => f.path),
+                    ];
+
+                    String dateStr = '';
+                    if (_selectedDate != null) {
+                      dateStr =
+                          '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}';
+                    }
+                    String timeStr = '';
+                    if (_selectedTime != null) {
+                      timeStr =
+                          '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')} WIB';
+                    }
+
+                    final reportData = {
+                      'isAnonymous': _isAnonymous,
+                      'category': _selectedCategory,
+                      'incidentDate': dateStr,
+                      'incidentTime': timeStr,
+                      'incidentLocation': _selectedLocation,
+                      'reportedId': _selectedParty,
+                      'description': _chronologyCtrl.text,
+                      'filePaths': filePaths,
+                      'hasFile': filePaths.isNotEmpty,
+                      'title': _selectedCategory.isNotEmpty
+                          ? _selectedCategory
+                          : 'Laporan Perundungan',
+                    };
+
+                    context.push('/report/review', extra: reportData);
+                  },
+                  onBack: _goBack,
+                ),
+        ),
       ),
     );
   }
@@ -239,13 +202,19 @@ class _Step1Identitas extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _buildAppBar(context, 1),
+        _buildAppBar(context),
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const AuthStepper(
+                  currentStep: 1,
+                  labels: ['Identitas', 'Bukti', 'Review'],
+                ),
+                const SizedBox(height: 24),
+
                 // Toggle Identitas / Anonim
                 Row(
                   children: [
@@ -628,13 +597,19 @@ class _Step2BuktiState extends State<_Step2Bukti> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _buildAppBar(context, 2),
+        _buildAppBar(context),
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const AuthStepper(
+                  currentStep: 2,
+                  labels: ['Identitas', 'Bukti', 'Review'],
+                ),
+                const SizedBox(height: 16),
+
                 const Text(
                   'Unggah bukti yang dapat membantu memperkuat laporan Anda',
                   style: TextStyle(fontSize: 13, color: AppTheme.neutral500),
@@ -843,50 +818,45 @@ class _Step2BuktiState extends State<_Step2Bukti> {
 
 // ─── Shared AppBar ───────────────────────────────────────────────────────────
 
-Widget _buildAppBar(BuildContext context, int step) {
+Widget _buildAppBar(BuildContext context) {
   return Container(
     color: Colors.white,
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     child: SafeArea(
       bottom: false,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      child: Row(
         children: [
-          Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                    size: 20, color: AppTheme.neutral700),
-                onPressed: () => Navigator.of(context).maybePop(),
-              ),
-              // Logo
-              Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: AppTheme.primary600,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Icon(Icons.shield_outlined,
-                    color: Colors.white, size: 18),
-              ),
-              const SizedBox(width: 6),
-              const Text(
-                'SpeakUp',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.primary600,
-                ),
-              ),
-            ],
+          IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                size: 20, color: AppTheme.neutral700),
+            onPressed: () => Navigator.of(context).maybePop(),
           ),
-          const SizedBox(height: 8),
-          AuthStepper(
-            currentStep: step,
-            labels: const ['Identitas', 'Bukti', 'Review'],
+          // Logo
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: AppTheme.primary600,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: const Icon(Icons.shield_outlined,
+                color: Colors.white, size: 18),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(width: 6),
+          const Text(
+            'SpeakUp',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.primary600,
+            ),
+          ),
+          const Spacer(),
+          IconButton(
+            icon: const Icon(Icons.notifications_outlined,
+                color: AppTheme.neutral700),
+            onPressed: () {},
+          ),
         ],
       ),
     ),

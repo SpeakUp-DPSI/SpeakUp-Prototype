@@ -6,7 +6,6 @@ import '../../../../core/widgets/empty_state_widget.dart';
 import '../../../dashboard/presentation/providers/dashboard_provider.dart';
 import '../../../report/presentation/providers/report_provider.dart';
 import '../../../report/data/models/report_model.dart';
-import 'web_profile_dropdown.dart';
 
 class ParentDashboardScreen extends ConsumerWidget {
   const ParentDashboardScreen({super.key});
@@ -16,46 +15,11 @@ class ParentDashboardScreen extends ConsumerWidget {
     final statsAsync = ref.watch(dashboardStatsProvider);
     final reportsAsync = ref.watch(reportsListProvider);
 
-    final isWideScreen = MediaQuery.of(context).size.width >= 768;
-
     return Scaffold(
-      appBar: isWideScreen ? null : AppBar(
+      appBar: AppBar(
         title: const Text('Dashboard Orang Tua', style: TextStyle(color: AppTheme.neutral900, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         elevation: 0,
-        actions: [
-          Row(
-            children: [
-              if (MediaQuery.of(context).size.width >= 768)
-                const WebProfileDropdown(),
-              const SizedBox(width: 8),
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  IconButton(
-                    onPressed: () => context.push('/notifications'),
-                    icon: const Icon(Icons.notifications_outlined, color: AppTheme.neutral700, size: 26),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                  Positioned(
-                    right: 0,
-                    top: 0,
-                    child: Container(
-                      width: 10,
-                      height: 10,
-                      decoration: const BoxDecoration(
-                        color: AppTheme.danger600,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 16),
-            ],
-          ),
-        ],
       ),
       body: RefreshIndicator(
         onRefresh: () async {
