@@ -72,6 +72,9 @@ class MediationRemoteDataSource {
       }
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? e.message);
+    }
+  }
+
   Future<List<MediationModel>> getMyMediations() async {
     try {
       final response = await apiClient.dio.get('/mediations');
