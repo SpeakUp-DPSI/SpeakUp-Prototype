@@ -13,6 +13,31 @@ class AdminDashboardScreen extends ConsumerWidget {
         title: const Text('Admin Console', style: TextStyle(color: AppTheme.neutral900, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          Stack(
+            children: [
+              IconButton(
+                onPressed: () => context.push('/notifications'),
+                icon: const Icon(Icons.notifications_outlined, color: AppTheme.neutral700, size: 26),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+              Positioned(
+                right: 0,
+                top: 0,
+                child: Container(
+                  width: 10,
+                  height: 10,
+                  decoration: const BoxDecoration(
+                    color: AppTheme.danger600,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 16),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
@@ -34,14 +59,11 @@ class AdminDashboardScreen extends ConsumerWidget {
                 _buildMenuCard('Laporan', Icons.description, AppTheme.primary600, () {
                   context.go('/reports');
                 }),
-                _buildMenuCard('Notifikasi', Icons.notifications, AppTheme.warning600, () {
-                  context.go('/notifications');
-                }),
                 _buildMenuCard('Audit Logs', Icons.receipt_long, AppTheme.info600, () {
                   context.push('/audit-logs');
                 }),
-                _buildMenuCard('Statistik', Icons.analytics, AppTheme.success600, () {
-                  context.go('/reports');
+                _buildMenuCard('Pengguna', Icons.manage_accounts, AppTheme.success600, () {
+                  context.push('/users');
                 }),
               ],
             ),
