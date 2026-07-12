@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../providers/dashboard_provider.dart';
 import '../../../report/presentation/providers/report_provider.dart';
+import 'web_profile_dropdown.dart';
 
 class PrincipalDashboardScreen extends ConsumerStatefulWidget {
   const PrincipalDashboardScreen({super.key});
@@ -29,8 +30,48 @@ class _PrincipalDashboardScreenState
       userName = authState.user.name;
     }
 
+    final isWideScreen = MediaQuery.of(context).size.width >= 768;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4FA),
+      appBar: isWideScreen ? null : AppBar(
+        title: const Text('Dashboard Kepala Sekolah', style: TextStyle(color: AppTheme.neutral900, fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        actions: [
+          Row(
+            children: [
+              if (MediaQuery.of(context).size.width >= 768)
+                const WebProfileDropdown(),
+              const SizedBox(width: 8),
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  IconButton(
+                    onPressed: () => context.push('/notifications'),
+                    icon: const Icon(Icons.notifications_outlined, color: AppTheme.neutral700, size: 26),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: const BoxDecoration(
+                        color: AppTheme.danger600,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 16),
+            ],
+          ),
+        ],
+      ),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {

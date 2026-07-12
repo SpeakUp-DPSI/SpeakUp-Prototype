@@ -152,4 +152,70 @@ class MediationController extends Controller
             'data' => $mediation
         ]);
     }
+
+    public function contactParticipant(Request $request, $id)
+    {
+        $user = auth()->user();
+
+        // Only Guru BK can contact participants for mediation
+        if ($user->role->name !== 'guru_bk') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $mediation = Mediation::with(['participants.user'])->findOrFail($id);
+
+        // Find the non-mediator participants (like parent or student)
+        foreach ($mediation->participants as $participant) {
+            if ($participant->user_id !== $user->id) {
+                // Create a notification for them
+                \App\Models\Notification::create([
+                    'user_id' => $participant->user_id,
+                    'title' => 'Panggilan Mediasi',
+                    'message' => 'Guru BK sedang menghubungi Anda untuk mediasi.',
+                    'type' => 'mediation_call',
+                    'related_id' => $mediation->id,
+                ]);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Notifikasi berhasil dikirim ke pihak terlibat'
+        ]);
+    }
+    public function myMediations(Request $request)
+    {
+        $user = auth()->user();
+        
+        $mediations = Mediation::with(['mediator', 'participants', 'report'])
+            ->whereHas('participants', function($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })
+            ->latest()
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $mediations
+        ]);
+    }
+
+    public function updateParticipantStatus(Request $request, $id)
+    {
+        $user = auth()->user();
+        
+        $mediation = Mediation::findOrFail($id);
+        $participant = $mediation->participants()->where('user_id', $user->id)->first();
+        
+        if (!$participant) {
+            return response()->json(['success' => false, 'message' => 'Not a participant'], 403);
+        }
+
+        $participant->update(['status' => $request->status]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Status partisipasi diperbarui'
+        ]);
+    }
 }

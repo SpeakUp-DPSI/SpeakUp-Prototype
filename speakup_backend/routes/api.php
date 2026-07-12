@@ -32,8 +32,11 @@ Route::middleware('auth:sanctum')->group(function () {
     // Mediations (nested under reports + standalone)
     Route::get('/reports/{report}/mediations', [MediationController::class, 'index']);
     Route::post('/reports/{report}/mediations', [MediationController::class, 'store']);
+    Route::get('/mediations', [MediationController::class, 'myMediations']);
     Route::get('/mediations/{id}', [MediationController::class, 'show']);
     Route::put('/mediations/{id}/status', [MediationController::class, 'updateStatus']);
+    Route::put('/mediations/{id}/participant-status', [MediationController::class, 'updateParticipantStatus']);
+    Route::post('/mediations/{id}/contact', [MediationController::class, 'contactParticipant']);
 
     // Follow-ups
     Route::get('/reports/{report}/follow-ups', [FollowUpController::class, 'index']);

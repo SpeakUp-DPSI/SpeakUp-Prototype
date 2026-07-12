@@ -23,6 +23,15 @@ class MediationModel {
     this.participants = const [],
   });
 
+  String myStatus(int userId) {
+    try {
+      final p = participants.firstWhere((p) => p.userId == userId);
+      return p.status;
+    } catch (e) {
+      return 'pending';
+    }
+  }
+
   factory MediationModel.fromJson(Map<String, dynamic> json) {
     return MediationModel(
       id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,

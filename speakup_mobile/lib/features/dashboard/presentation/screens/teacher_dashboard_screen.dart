@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../providers/dashboard_provider.dart';
 import '../../../report/presentation/providers/report_provider.dart';
+import 'web_profile_dropdown.dart';
 
 class TeacherDashboardScreen extends ConsumerStatefulWidget {
   const TeacherDashboardScreen({super.key});
@@ -411,6 +412,8 @@ class _TeacherDashboardScreenState
   // ─── AppBar ───────────────────────────────────────────────────────────────
 
   Widget _buildAppBar(BuildContext context) {
+    if (MediaQuery.of(context).size.width >= 768) return const SizedBox.shrink();
+
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -439,15 +442,20 @@ class _TeacherDashboardScreenState
               ),
             ],
           ),
-          Stack(
+          Row(
             children: [
-              IconButton(
-                onPressed: () => context.go('/notifications'),
-                icon: const Icon(Icons.notifications_outlined,
-                    color: AppTheme.neutral700),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
+              if (MediaQuery.of(context).size.width >= 768)
+                const WebProfileDropdown(),
+              const SizedBox(width: 8),
+              Stack(
+                children: [
+                  IconButton(
+                    onPressed: () => context.go('/notifications'),
+                    icon: const Icon(Icons.notifications_outlined,
+                        color: AppTheme.neutral700),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
               Positioned(
                 right: 0,
                 top: 0,
@@ -460,7 +468,9 @@ class _TeacherDashboardScreenState
               ),
             ],
           ),
-        ],
+          ],
+        ),
+      ],
       ),
     );
   }
@@ -469,13 +479,15 @@ class _TeacherDashboardScreenState
 
   Widget _buildStatGrid(int total, int menunggu, int diproses, int valid,
       int mediasi, int selesai) {
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 10,
-      mainAxisSpacing: 10,
-      childAspectRatio: 2.5,
+    return LayoutBuilder(builder: (context, constraints) {
+      final isWide = constraints.maxWidth >= 768;
+      return GridView.count(
+        crossAxisCount: isWide ? 4 : 2,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        childAspectRatio: isWide ? 2.8 : 2.5,
       children: [
         _statCard(Icons.folder_copy_outlined, '$total', 'Semua Laporan',
             const Color(0xFF1A3A7A), bordered: true),
@@ -495,7 +507,8 @@ class _TeacherDashboardScreenState
             AppTheme.success600,
             bordered: true, label: 'Selesai'),
       ],
-    );
+      );
+    });
   }
 
   Widget _statCard(IconData icon, String count, String sub, Color color,

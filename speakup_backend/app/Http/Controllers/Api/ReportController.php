@@ -79,6 +79,10 @@ class ReportController extends Controller
             return $this->errorResponse('Akses tidak diizinkan', 403);
         }
 
+        if ($request->status === 'completed' && !$user->hasRole('guru_bk')) {
+            return $this->errorResponse('Hanya Guru BK yang dapat menyelesaikan laporan', 403);
+        }
+
         $report = $this->reportService->updateStatus($id, $request->status, $user->id, $request->notes);
 
         return $this->successResponse($report, 'Status laporan berhasil diperbarui');

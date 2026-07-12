@@ -22,3 +22,14 @@ Sejak pull terakhir, berikut adalah fitur dan perbaikan yang ditambahkan:
 - Penambahan halaman Statistik/Tren (`Trend Chart`) untuk Kepala Sekolah.
 - Penambahan halaman Pengaturan Notifikasi dan Edit Profil di sub-menu Profil.
 
+### 4. Responsivitas Aplikasi Web
+- **Fixed Top Navbar:** Menambahkan navbar atas yang fixed pada Web untuk semua role yang berisi Profile Dropdown (Pengaturan Akun dan Logout) agar lebih mudah diakses.
+- **Teacher Dashboard (Web):** Menyesuaikan tampilan dashboard pada web (Grid layout responsif untuk web).
+- **Create Report (Web):** Mengembalikan desain Create Report pada web apps ke layout dialog/popup responsif tanpa memengaruhi desain di mobile apps.
+- **Login Web:** Menambahkan fungsionalitas tombol "Enter" pada field password untuk submit login langsung di Web Apps.
+
+### 5. Backend & Fitur Lanjutan
+- **Hubungi Mediator/Pihak Terkait (Guru BK):** Penambahan endpoint baru `POST /api/mediations/{id}/contact` untuk mengirim notifikasi push ke orang tua/pihak terkait dari sisi Guru BK saat proses mediasi.
+- Penambahan endpoint `GET /api/mediations` untuk mengambil seluruh mediasi user yang aktif tanpa harus mengakses dari list report.
+- Perbaikan sinkronisasi respons API untuk mendukung multi-role mediasi.
+

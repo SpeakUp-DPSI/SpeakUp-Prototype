@@ -5,6 +5,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/network/api_provider.dart';
 import '../../../../core/widgets/empty_state_widget.dart';
 import '../../data/models/mediation_model.dart';
+import '../../../authentication/presentation/providers/auth_provider.dart';
 import '../../data/datasources/mediation_remote_data_source.dart';
 
 // ── Providers ──────────────────────────────────────────────────────────────
@@ -73,6 +74,8 @@ class _ParentMediationScreenState extends ConsumerState<ParentMediationScreen>
   @override
   Widget build(BuildContext context) {
     final mediationsAsync = ref.watch(myMediationsProvider);
+    final authState = ref.watch(authProvider);
+    final userId = authState is AuthSuccess ? authState.user.id : 0;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -104,14 +107,14 @@ class _ParentMediationScreenState extends ConsumerState<ParentMediationScreen>
           iconColor: AppTheme.danger600,
         ),
         data: (mediations) {
-          final pending = mediations.where((m) => m.myStatus == 'pending').toList();
+          final pending = mediations.where((m) => m.myStatus(userId) == 'pending').toList();
           return RefreshIndicator(
             onRefresh: () async => ref.invalidate(myMediationsProvider),
             child: TabBarView(
               controller: _tabController,
               children: [
-                _buildList(pending, showAttendance: true),
-                _buildList(mediations, showAttendance: false),
+                _buildList(pending, userId, showAttendance: true),
+                _buildList(mediations, userId, showAttendance: false),
               ],
             ),
           );
@@ -120,7 +123,7 @@ class _ParentMediationScreenState extends ConsumerState<ParentMediationScreen>
     );
   }
 
-  Widget _buildList(List<MediationModel> list, {required bool showAttendance}) {
+  Widget _buildList(List<MediationModel> list, int userId, {required bool showAttendance}) {
     if (list.isEmpty) {
       return EmptyStateWidget(
         icon: Icons.handshake_outlined,
@@ -134,14 +137,15 @@ class _ParentMediationScreenState extends ConsumerState<ParentMediationScreen>
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: list.length,
-      itemBuilder: (context, index) => _buildCard(list[index]),
-    );
+      itemBuilder: (context, index) {
+        return _buildCard(list[index], userId);
+      },);
   }
 
-  Widget _buildCard(MediationModel med) {
+  Widget _buildCard(MediationModel med, int userId) {
     final statusColor = _statusColor(med.status);
-    final myStatusColor = _myStatusColor(med.myStatus);
-    final myStatusLabel = _myStatusLabel(med.myStatus);
+    final myStatusColor = _myStatusColor(med.myStatus(userId));
+    final myStatusLabel = _myStatusLabel(med.myStatus(userId));
     final isLoading = _loadingMap[med.id] == true;
 
     return Container(
@@ -212,7 +216,7 @@ class _ParentMediationScreenState extends ConsumerState<ParentMediationScreen>
             ),
           ),
           const Divider(height: 1),
-          if (med.myStatus == 'pending')
+          if (med.myStatus(userId) == 'pending')
             Padding(
               padding: const EdgeInsets.all(12),
               child: isLoading

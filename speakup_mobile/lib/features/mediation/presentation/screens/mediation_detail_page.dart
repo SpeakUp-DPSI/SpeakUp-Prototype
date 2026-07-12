@@ -2,16 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../data/models/mediation_model.dart';
 
-class MediationDetailPage extends StatefulWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../authentication/presentation/providers/auth_provider.dart';
+import '../providers/mediation_provider.dart';
+import '../../../../core/theme/app_theme.dart';
+
+class MediationDetailPage extends ConsumerStatefulWidget {
   final MediationModel mediation;
 
   const MediationDetailPage({super.key, required this.mediation});
 
   @override
-  State<MediationDetailPage> createState() => _MediationDetailPageState();
+  ConsumerState<MediationDetailPage> createState() => _MediationDetailPageState();
 }
 
-class _MediationDetailPageState extends State<MediationDetailPage>
+class _MediationDetailPageState extends ConsumerState<MediationDetailPage>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
@@ -38,6 +43,12 @@ class _MediationDetailPageState extends State<MediationDetailPage>
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
+    bool isGuruBK = false;
+    if (authState is AuthSuccess && authState.user.roles.contains('guru_bk')) {
+      isGuruBK = true;
+    }
+
     final m = widget.mediation;
     final statusColor = _getStatusColor(m.status);
     final statusLabel = _formatStatus(m.status);
@@ -125,7 +136,7 @@ class _MediationDetailPageState extends State<MediationDetailPage>
         ),
       ),
       // ─── Bottom Action ─────────────────────────────────────────────────
-      bottomNavigationBar: _buildBottomActions(m, isCompleted),
+      bottomNavigationBar: _buildBottomActions(m, isCompleted, isGuruBK),
     );
   }
 
@@ -594,7 +605,7 @@ class _MediationDetailPageState extends State<MediationDetailPage>
 
   // ─── Bottom Actions ────────────────────────────────────────────────────────
 
-  Widget _buildBottomActions(MediationModel m, bool isCompleted) {
+  Widget _buildBottomActions(MediationModel m, bool isCompleted, bool isGuruBK) {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
       decoration: BoxDecoration(
@@ -648,20 +659,47 @@ class _MediationDetailPageState extends State<MediationDetailPage>
                   child: SizedBox(
                     height: 52,
                     child: OutlinedButton.icon(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Menghubungi ${m.mediatorName ?? "mediator"}...'),
-                            backgroundColor: const Color(0xFF2563EB),
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
+                      onPressed: () async {
+                        if (isGuruBK) {
+                          try {
+                            await ref.read(mediationRemoteDataSourceProvider).contactParticipant(m.id);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text('Notifikasi telah dikirim ke pihak terkait'),
+                                  backgroundColor: AppTheme.success600,
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Gagal mengirim notifikasi: $e'),
+                                  backgroundColor: AppTheme.danger600,
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                              );
+                            }
+                          }
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Menghubungi ${m.mediatorName ?? "mediator"}...'),
+                              backgroundColor: const Color(0xFF2563EB),
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
                             ),
-                          ),
-                        );
+                          );
+                        }
                       },
                       icon: const Icon(Icons.phone_rounded, size: 18),
-                      label: const Text('Hubungi Mediator'),
+                      label: Text(isGuruBK ? 'Hubungi Pihak Terkait' : 'Hubungi Mediator'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF2563EB),
                         side: const BorderSide(color: Color(0xFF2563EB), width: 1.5),
