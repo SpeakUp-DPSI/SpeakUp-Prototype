@@ -66,7 +66,6 @@ class _MainWrapperScreenState extends ConsumerState<MainWrapperScreen> {
       return const [
         _TabConfig(branchIndex: 0, icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Beranda'),
         _TabConfig(branchIndex: 1, icon: Icons.article_outlined, activeIcon: Icons.article_rounded, label: 'Laporan'),
-        _TabConfig(branchIndex: 3, icon: Icons.settings_outlined, activeIcon: Icons.settings_rounded, label: 'Pengaturan'),
         _TabConfig(branchIndex: 4, icon: Icons.person_outline_rounded, activeIcon: Icons.person_rounded, label: 'Profil'),
       ];
     } else {

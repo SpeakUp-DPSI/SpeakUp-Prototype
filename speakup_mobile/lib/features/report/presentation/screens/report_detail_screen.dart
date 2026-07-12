@@ -24,8 +24,7 @@ class ReportDetailScreen extends ConsumerWidget {
             : 'siswa')
         : 'siswa';
     final isTeacher = role.contains('guru');
-    final isAdmin = role.contains('admin');
-    final canValidate = isTeacher || isAdmin;
+    final canValidate = isTeacher;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4FA),
